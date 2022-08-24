@@ -16,6 +16,7 @@ ndarray = "0.15"
 [dependencies.draw]
 package = "plt-draw"
 path = "../plt-draw"
+version = "0.1"
 
 [dev-dependencies]
 rand = "0.8"
