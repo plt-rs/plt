@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "plt",
+    "plt-draw",
+]
