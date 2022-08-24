@@ -1,6 +1,6 @@
 //! A plotting library with a focus on publication level aesthetics and control.
 //!
-//! To get started, see the [Examples](https://github.com) directory in the main repository.
+//! To get started, see the [Examples](https://github.com/plt-rs/plt/tree/main/plt/examples) directory in the main repository.
 //!
 //! # Basic structure
 //! - Plots are drawn on a [`Subplot`].
