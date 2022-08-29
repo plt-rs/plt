@@ -46,7 +46,7 @@ impl<'a, B: Backend> Figure<'a, B> {
 
         // size of figure in pixels
         let width = (desc.figsize.0 * desc.dpi as f32).floor() as u32;
-        let height = (desc.figsize.0 * desc.dpi as f32).floor() as u32;
+        let height = (desc.figsize.1 * desc.dpi as f32).floor() as u32;
 
         Self {
             subplots: Vec::new(),
