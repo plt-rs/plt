@@ -10,7 +10,7 @@ use std::collections::HashMap;
 /// Describes the configuration of a [`Figure`].
 #[derive(Clone, Debug)]
 pub struct FigureDescriptor {
-    /// The size, in dots (pixels), of the figure.
+    /// The size, in inches, of the figure.
     pub figsize: (f32, f32),
     /// The dots (pixels) per inch of the figure.
     pub dpi: u16,
