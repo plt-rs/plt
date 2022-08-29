@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### plt
+
+- Functionality for drawing to provided backend through `Figure::draw_to_backend`.
+
+#### plt-draw
+
+- Alternate `CairoCanvas` constructor for providing the `cairo::Context`: `CairoCanvas::from_context`.
+- `size` function to the `Canvas` trait for getting the size of a canvas.
+
 ## [0.1.0] - 2022-08-24
 
 - Crates:
