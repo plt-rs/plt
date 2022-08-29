@@ -89,6 +89,22 @@ impl<'a, B: Backend> Figure<'a, B> {
         Ok(self.subplots.last_mut().unwrap())
     }
 
+    /// Draw figure to provided backend.
+    pub fn draw_to_backend(
+        &mut self, backend: &mut B,
+    ) -> Result<(), PltError> {
+        let old_size = self.size;
+        self.size = backend.size();
+
+        for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {
+            draw_subplot(backend, subplot, subplot_area, self.scaling)?;
+        }
+
+        self.size = old_size;
+
+        Ok(())
+    }
+
     /// Draw figure to a file.
     pub fn draw_file<P: AsRef<path::Path>>(
         &self, format: FileFormat, filename: P,

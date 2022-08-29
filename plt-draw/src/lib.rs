@@ -359,6 +359,8 @@ pub trait Canvas {
     fn text_size(&mut self, desc: TextDescriptor) -> Size;
     /// Save the image to a file.
     fn save_file<P: AsRef<path::Path>>(&mut self, desc: SaveFileDescriptor<P>);
+    /// Get canvas size.
+    fn size(&self) -> Size;
 }
 
 /// The Cairo backend.
@@ -368,6 +370,21 @@ pub struct CairoCanvas {
     context: cairo::Context,
     graphics_type: GraphicsType,
     temp_file: Option<path::PathBuf>,
+}
+impl CairoCanvas {
+    /// Construct from existing context.
+    pub fn from_context(
+        context: &cairo::Context,
+        size: Size,
+        graphics_type: GraphicsType,
+    ) -> Self {
+        Self {
+            size,
+            context: context.clone(),
+            graphics_type,
+            temp_file: None,
+        }
+    }
 }
 impl Canvas for CairoCanvas {
     fn new(desc: CanvasDescriptor) -> Self {
@@ -656,6 +673,9 @@ impl Canvas for CairoCanvas {
                 }
             },
         };
+    }
+    fn size(&self) -> Size {
+        self.size
     }
 }
 impl CairoCanvas {
