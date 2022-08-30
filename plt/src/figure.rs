@@ -20,7 +20,7 @@ pub struct FigureDescriptor {
 impl Default for FigureDescriptor {
     fn default() -> Self {
         Self {
-            figsize: (6.75, 2.),
+            figsize: (6.75, 6.75),
             dpi: 100,
             face_color: Color::WHITE,
         }

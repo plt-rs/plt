@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2022-08-30
+
 ### Added
 
 #### plt
@@ -16,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Alternate `CairoCanvas` constructor for providing the `cairo::Context`: `CairoCanvas::from_context`.
 - `size` function to the `Canvas` trait for getting the size of a canvas.
+
+### Fixed
+
+#### plt
+
+- Figsize was only using one dimension.
+- Fixed doc error
 
 ## [0.1.0] - 2022-08-24
 
