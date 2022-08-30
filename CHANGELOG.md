@@ -19,12 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Alternate `CairoCanvas` constructor for providing the `cairo::Context`: `CairoCanvas::from_context`.
 - `size` function to the `Canvas` trait for getting the size of a canvas.
 
+### Changed
+
+### plt
+
+- Changed default figsize to more reasonable value.
+
 ### Fixed
 
 #### plt
 
 - Figsize was only using one dimension.
-- Fixed doc error
+- Fixed doc error.
 
 ## [0.1.0] - 2022-08-24
 
