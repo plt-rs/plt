@@ -320,8 +320,7 @@ impl Default for PlotData<'_> {
 impl SeriesData for PlotData<'_> {
     fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
         Box::new(
-            iter::zip(self.xdata.iter(), self.ydata.iter())
-                .map(|(x, y)| (*x, *y))
+            iter::zip(self.xdata.iter().cloned(), self.ydata.iter().cloned())
         )
     }
 
@@ -380,8 +379,7 @@ impl Default for PlotDataOwned {
 impl SeriesData for PlotDataOwned {
     fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
         Box::new(
-            iter::zip(self.xdata.iter(), self.ydata.iter())
-                .map(|(x, y)| (*x, *y))
+            iter::zip(self.xdata.iter().cloned(), self.ydata.iter().cloned())
         )
     }
 
@@ -418,6 +416,126 @@ impl PlotDataOwned {
 
         Ok(Self {
             xdata,
+            ydata,
+        })
+    }
+}
+
+/// Holds borrowed step data to be plotted.
+#[derive(Copy, Clone, Debug)]
+pub struct StepData<'a> {
+    edges: ndarray::ArrayView1<'a, f64>,
+    ydata: ndarray::ArrayView1<'a, f64>,
+}
+impl Default for StepData<'_> {
+    fn default() -> Self {
+        Self {
+            edges: ndarray::ArrayView1::<f64>::from(&[]),
+            ydata: ndarray::ArrayView1::<f64>::from(&[]),
+        }
+    }
+}
+impl SeriesData for StepData<'_> {
+    fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
+        Box::new(iter::zip(
+            self.edges.windows(2).into_iter().flatten().cloned(),
+            self.ydata.iter().map(|y| [y, y]).flatten().cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn ymax(&self) -> f64 {
+        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+}
+impl<'a> StepData<'a> {
+    /// Main constructor, taking separate array views of steps and y-values.
+    pub fn new<
+        Es: Into<ndarray::ArrayView1<'a, f64>>,
+        Ys: Into<ndarray::ArrayView1<'a, f64>>,
+    >(edges: Es, ys: Ys) -> Result<Self, PltError> {
+        let edges = edges.into();
+        let ydata = ys.into();
+
+        // check that data is valid
+        if edges.len() != (ydata.len() + 1) {
+            return Err(PltError::InvalidData("X and Y data are different lengths".to_owned()))
+        } else if edges.iter().any(|&v| v.is_nan()) {
+            return Err(PltError::InvalidData("X data has a NaN value".to_owned()))
+        } else if ydata.iter().any(|&v| v.is_nan()) {
+            return Err(PltError::InvalidData("Y data has a NaN value".to_owned()))
+        }
+
+        Ok(Self {
+            edges,
+            ydata,
+        })
+    }
+}
+
+/// Holds owned data to be plotted.
+#[derive(Clone, Debug)]
+pub struct StepDataOwned {
+    edges: ndarray::Array1<f64>,
+    ydata: ndarray::Array1<f64>,
+}
+impl Default for StepDataOwned {
+    fn default() -> Self {
+        Self {
+            edges: ndarray::Array1::<f64>::default(0),
+            ydata: ndarray::Array1::<f64>::default(0),
+        }
+    }
+}
+impl SeriesData for StepDataOwned {
+    fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
+        Box::new(iter::zip(
+            self.edges.windows(2).into_iter().flatten().cloned(),
+            self.ydata.iter().map(|y| [y, y]).flatten().cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn ymax(&self) -> f64 {
+        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+}
+impl StepDataOwned {
+    /// Main constructor, taking separate arrays of steps and y-values.
+    pub fn new<
+        Es: Into<ndarray::Array1<f64>>,
+        Ys: Into<ndarray::Array1<f64>>,
+    >(edges: Es, ys: Ys) -> Result<Self, PltError> {
+        let edges = edges.into();
+        let ydata = ys.into();
+
+        // check that data is valid
+        if edges.len() != (ydata.len() + 1) {
+            return Err(PltError::InvalidData("X and Y data are different lengths".to_owned()))
+        } else if edges.iter().any(|&v| v.is_nan()) {
+            return Err(PltError::InvalidData("X data has a NaN value".to_owned()))
+        } else if ydata.iter().any(|&v| v.is_nan()) {
+            return Err(PltError::InvalidData("Y data has a NaN value".to_owned()))
+        }
+
+        Ok(Self {
+            edges,
             ydata,
         })
     }

@@ -12,7 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `visible` member of SubplotDescriptor to control the visibility of an axis line
 
-## [0.1.0] - 2022-08-30
+## [0.2.1] - 2022-09-02
+
+### Added
+
+#### plt
+
+- `StepData` and `StepDataOwned` for making step plots
+- step example
+
+## [0.2.0] - 2022-08-30
 
 ### Added
 
