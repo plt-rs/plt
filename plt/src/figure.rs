@@ -172,6 +172,7 @@ struct AxisFinalized {
     pub major_grid: bool,
     pub minor_grid: bool,
     pub limits: (f64, f64),
+    pub visible: bool,
 }
 
 fn sigdigit(mut num: f64) -> i32 {
@@ -691,6 +692,7 @@ fn draw_subplot<B: Backend>(
                 major_grid,
                 minor_grid,
                 limits,
+                visible: axis.visible,
             },
         );
     }
@@ -946,7 +948,7 @@ fn draw_subplot<B: Backend>(
                 draw::Line {
                     p1: draw::Point {
                         x: plot_area.xmax as f64,
-                        y: plot_area.ymin as f64 - axis_offset
+                        y: plot_area.ymin as f64 + axis_offset
                     },
                     p2: draw::Point {
                         x: plot_area.xmax as f64,
@@ -961,7 +963,7 @@ fn draw_subplot<B: Backend>(
                         y: plot_area.ymin as f64
                     },
                     p2: draw::Point {
-                        x: plot_area.xmax as f64 - axis_offset,
+                        x: plot_area.xmax as f64 + axis_offset,
                         y: plot_area.ymin as f64
                     },
                 }
@@ -980,11 +982,16 @@ fn draw_subplot<B: Backend>(
             },
         };
 
+        let axis_line_color = if axis.visible {
+            line_color
+        } else {
+            Color::TRANSPARENT
+        };
         // draw axis
         canvas.draw_line(draw::LineDescriptor {
             line,
             line_width,
-            line_color,
+            line_color: axis_line_color,
             ..Default::default()
         });
 

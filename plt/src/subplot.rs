@@ -153,6 +153,8 @@ pub struct Axis<S: AsRef<str>> {
     pub grid: Grid,
     /// How the maximum and minimum plotted values should be set.
     pub limits: Limits,
+    /// Whether to draw the axis line.
+    pub visible: bool,
 }
 impl<S: AsRef<str> + Default> Axis<S> {
     pub(crate) fn primary_default() -> Self {
@@ -162,6 +164,7 @@ impl<S: AsRef<str> + Default> Axis<S> {
             minor_ticks: Ticker::null(),
             grid: Grid::None,
             limits: Limits::Auto,
+            visible: true,
         }
     }
     pub(crate) fn primary_detailed() -> Self {
@@ -172,6 +175,7 @@ impl<S: AsRef<str> + Default> Axis<S> {
                 .with_labels(&[]),
             grid: Grid::Major,
             limits: Limits::Auto,
+            visible: true,
         }
     }
     pub(crate) fn secondary_default() -> Self {
@@ -181,6 +185,7 @@ impl<S: AsRef<str> + Default> Axis<S> {
             minor_ticks: Ticker::null(),
             grid: Grid::None,
             limits: Limits::Auto,
+            visible: true,
         }
     }
     pub(crate) fn secondary_detailed() -> Self {
@@ -192,6 +197,7 @@ impl<S: AsRef<str> + Default> Axis<S> {
                 .with_labels(&[]),
             grid: Grid::None,
             limits: Limits::Auto,
+            visible: true,
         }
     }
 }
@@ -599,6 +605,7 @@ impl<S: AsRef<str>> Axis<S> {
             minor_ticks: self.minor_ticks.clone(),
             grid: self.grid,
             limits: self.limits,
+            visible: self.visible,
         }
     }
 }
