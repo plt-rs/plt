@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### plt
+
+- `StepData` and `StepDataOwned` for making step plots
+- step example
+
 ## [0.2.0] - 2022-08-30
 
 ### Added
