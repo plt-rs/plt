@@ -545,15 +545,26 @@ fn draw_subplot<B: Backend>(
             }
         };
 
+        let is_primary = subplot.plot_infos.iter()
+            .any(|info| info.xaxis == placement || info.yaxis == placement);
+
         // get major tick marks
         let major_ticks = if let TickSpacing::Manual(
             ticks
-        ) = &axis.major_ticks.spacing {
+        ) = &axis.major_tick_marks {
             ticks.clone()
         } else {
-            let nticks = match &axis.major_ticks.spacing {
+            let nticks = match &axis.major_tick_marks {
                 TickSpacing::Count(n) => *n,
-                TickSpacing::Auto => 5,
+                TickSpacing::On => 5,
+                TickSpacing::Auto => {
+                    if is_primary {
+                        5
+                    } else {
+                        0
+                    }
+                },
+                TickSpacing::None => 0,
                 _ => 0,
             };
 
@@ -566,12 +577,20 @@ fn draw_subplot<B: Backend>(
         // get minor tick marks
         let minor_ticks = if let TickSpacing::Manual(
             ticks
-        ) = &axis.minor_ticks.spacing {
+        ) = &axis.minor_tick_marks {
             ticks.clone()
         } else {
-            let nticks = match &axis.minor_ticks.spacing {
+            let nticks = match &axis.minor_tick_marks {
                 TickSpacing::Count(n) => *n,
-                TickSpacing::Auto => 5 * major_ticks.len() as u16,
+                TickSpacing::On => major_ticks.len() as u16 * 5,
+                TickSpacing::Auto => {
+                    if is_primary {
+                        major_ticks.len() as u16 * 5
+                    } else {
+                        0
+                    }
+                },
+                TickSpacing::None => 0,
                 _ => 0,
             };
 
@@ -587,23 +606,49 @@ fn draw_subplot<B: Backend>(
             .copied()
             .collect::<Vec<_>>();
 
-        // get tick labels
-        let (major_labels, multiplier, offset) = if let TickLabels::Manual {
-            labels, multiplier, offset,
-        } = &axis.major_ticks.labels {
-            (labels.clone(), *multiplier, *offset)
-        } else {
-            let modifiers = tick_modifiers(major_ticks.as_slice())?;
-            let labels = ticks_to_labels(major_ticks.as_slice(), modifiers)?;
-            (labels, modifiers.1, modifiers.0)
+        // get major tick labels
+        let (major_labels, multiplier, offset) = match &axis.major_tick_labels {
+            TickLabels::Manual(labels) => {
+                (labels.clone(), 0, 0.0)
+            },
+            TickLabels::On => {
+                let modifiers = tick_modifiers(major_ticks.as_slice())?;
+                let labels = ticks_to_labels(major_ticks.as_slice(), modifiers)?;
+                (labels, modifiers.1, modifiers.0)
+            },
+            TickLabels::None => {
+                (vec![], 0, 0.0)
+            },
+            TickLabels::Auto => {
+                if is_primary {
+                    let modifiers = tick_modifiers(major_ticks.as_slice())?;
+                    let labels = ticks_to_labels(major_ticks.as_slice(), modifiers)?;
+                    (labels, modifiers.1, modifiers.0)
+                } else {
+                    (vec![], 0, 0.0)
+                }
+            },
         };
-        let minor_labels = if let TickLabels::Manual {
-            labels, multiplier: _, offset: _,
-        } = &axis.minor_ticks.labels {
-            labels.clone()
-        } else {
-            let modifiers = tick_modifiers(major_ticks.as_slice())?; // use major modifiers
-            ticks_to_labels(minor_ticks.as_slice(), modifiers)?
+        // get minor tick labels
+        let minor_labels = match &axis.minor_tick_labels {
+            TickLabels::Manual(labels) => {
+                labels.clone()
+            },
+            TickLabels::On => {
+                let modifiers = tick_modifiers(major_ticks.as_slice())?; // use major modifiers
+                ticks_to_labels(minor_ticks.as_slice(), modifiers)?
+            },
+            TickLabels::None => {
+                vec![]
+            },
+            TickLabels::Auto => {
+                if is_primary {
+                    let modifiers = tick_modifiers(major_ticks.as_slice())?; // use major modifiers
+                    ticks_to_labels(minor_ticks.as_slice(), modifiers)?
+                } else {
+                    vec![]
+                }
+            },
         };
 
         let (major_grid, minor_grid) = match axis.grid {

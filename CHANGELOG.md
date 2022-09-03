@@ -10,7 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### plt
 
-- `visible` member of SubplotDescriptor to control the visibility of an axis line
+- `visible` member of SubplotDescriptor to control the visibility of an axis line.
+
+### Changed
+
+#### plt
+
+- Split `Ticker` into separate `TickSpacing` and `TickLabels` structs.
+- `Auto` varients of `TickSpacing` and `TickLabels` now determine if they should exist
+  based on whether a plot uses that axis.
 
 ## [0.2.1] - 2022-09-02
 
@@ -18,8 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### plt
 
-- `StepData` and `StepDataOwned` for making step plots
-- step example
+- `StepData` and `StepDataOwned` for making step plots.
+- step example.
 
 ## [0.2.0] - 2022-08-30
 

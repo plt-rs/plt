@@ -18,7 +18,6 @@ fn main() {
     sp_desc.title = "double plot";
     sp_desc.yaxis.label = "y1 data";
     sp_desc.secondary_yaxis.label = "y2 data";
-    sp_desc.secondary_yaxis.major_ticks = plt::Ticker::linear(5);
     sp_desc.xaxis.label = "x data";
 
     // create subplot

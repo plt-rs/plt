@@ -27,10 +27,46 @@ impl SubplotDescriptor<'_> {
             format: SubplotFormat::default(),
             title: "",
             legend: false,
-            xaxis: Axis::primary_detailed(),
-            yaxis: Axis::primary_detailed(),
-            secondary_xaxis: Axis::secondary_detailed(),
-            secondary_yaxis: Axis::secondary_detailed(),
+            xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::Major,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::Major,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
         }
     }
 }
@@ -40,10 +76,46 @@ impl Default for SubplotDescriptor<'_> {
             format: SubplotFormat::default(),
             title: "",
             legend: false,
-            xaxis: Axis::primary_default(),
-            yaxis: Axis::primary_default(),
-            secondary_xaxis: Axis::secondary_default(),
-            secondary_yaxis: Axis::secondary_default(),
+            xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
         }
     }
 }
@@ -145,10 +217,14 @@ pub enum TickDirection {
 pub struct Axis<S: AsRef<str>> {
     /// The label desplayed by the axis.
     pub label: S,
-    /// Determines the major tick mark locations and labels on this axis.
-    pub major_ticks: Ticker,
+    /// Determines the major tick mark locations on this axis.
+    pub major_tick_marks: TickSpacing,
+    /// Determines the major tick labels on this axis.
+    pub major_tick_labels: TickLabels,
     /// Determines the minor tick mark locations and labels on this axis.
-    pub minor_ticks: Ticker,
+    pub minor_tick_marks: TickSpacing,
+    /// Determines the minor tick labels on this axis.
+    pub minor_tick_labels: TickLabels,
     /// Sets which, if any, tick marks on this axis have grid lines.
     pub grid: Grid,
     /// How the maximum and minimum plotted values should be set.
@@ -156,97 +232,22 @@ pub struct Axis<S: AsRef<str>> {
     /// Whether to draw the axis line.
     pub visible: bool,
 }
-impl<S: AsRef<str> + Default> Axis<S> {
-    pub(crate) fn primary_default() -> Self {
-        Self {
-            label: S::default(),
-            major_ticks: Ticker::auto(),
-            minor_ticks: Ticker::null(),
-            grid: Grid::None,
-            limits: Limits::Auto,
-            visible: true,
-        }
-    }
-    pub(crate) fn primary_detailed() -> Self {
-        Self {
-            label: S::default(),
-            major_ticks: Ticker::auto(),
-            minor_ticks: Ticker::auto()
-                .with_labels(&[]),
-            grid: Grid::Major,
-            limits: Limits::Auto,
-            visible: true,
-        }
-    }
-    pub(crate) fn secondary_default() -> Self {
-        Self {
-            label: S::default(),
-            major_ticks: Ticker::null(),
-            minor_ticks: Ticker::null(),
-            grid: Grid::None,
-            limits: Limits::Auto,
-            visible: true,
-        }
-    }
-    pub(crate) fn secondary_detailed() -> Self {
-        Self {
-            label: S::default(),
-            major_ticks: Ticker::auto()
-                .with_labels(&[]),
-            minor_ticks: Ticker::auto()
-                .with_labels(&[]),
-            grid: Grid::None,
-            limits: Limits::Auto,
-            visible: true,
-        }
-    }
-}
 
-/// Defines how axis tick marks and tick labels should be created.
 #[derive(Clone, Debug)]
-pub struct Ticker {
-    pub(crate) spacing: TickSpacing,
-    pub(crate) labels: TickLabels,
+pub enum TickSpacing {
+    On,
+    Auto,
+    None,
+    Count(u16),
+    Manual(Vec<f64>),
 }
-impl Ticker {
-    /// Tick marks and labels are determined by the library.
-    pub fn auto() -> Self {
-        Self {
-            spacing: TickSpacing::Auto,
-            labels: TickLabels::Auto,
-        }
-    }
-    /// A set number of tick marks and labels are spaced linearly.
-    pub fn linear(count: u16) -> Self {
-        Self {
-            spacing: TickSpacing::Count(count),
-            labels: TickLabels::Auto,
-        }
-    }
-    /// No tick marks.
-    pub fn null() -> Self {
-        Self {
-            spacing: TickSpacing::None,
-            labels: TickLabels::None,
-        }
-    }
-    /// Manually set tick marks.
-    pub fn manual(ticks: &[f64]) -> Self {
-        Self {
-            spacing: TickSpacing::Manual(ticks.to_vec()),
-            labels: TickLabels::Auto,
-        }
-    }
-    /// A builder like modifier for manually setting labels.
-    pub fn with_labels(mut self, labels: &[String]) -> Self {
-        self.labels = TickLabels::Manual {
-            labels: labels.to_vec(),
-            multiplier: 0,
-            offset: 0.0,
-        };
 
-        self
-    }
+#[derive(Clone, Debug)]
+pub enum TickLabels {
+    On,
+    Auto,
+    None,
+    Manual(Vec<String>),
 }
 
 /// Indicates which, if any, tick marks on an axis should have grid lines.
@@ -681,21 +682,6 @@ pub trait SeriesData: std::fmt::Debug {
 
 // private
 
-#[derive(Clone, Debug)]
-pub(crate) enum TickSpacing {
-    Auto,
-    Count(u16),
-    None,
-    Manual(Vec<f64>),
-}
-
-#[derive(Clone, Debug)]
-pub(crate) enum TickLabels {
-    Auto,
-    None,
-    Manual { labels: Vec<String>, multiplier: i32, offset: f64 },
-}
-
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
 pub(crate) enum AxisType {
     X,
@@ -719,8 +705,10 @@ impl<S: AsRef<str>> Axis<S> {
     fn to_buf(&self) -> AxisBuf {
         AxisBuf {
             label: self.label.as_ref().to_string(),
-            major_ticks: self.major_ticks.clone(),
-            minor_ticks: self.minor_ticks.clone(),
+            major_tick_marks: self.major_tick_marks.clone(),
+            major_tick_labels: self.major_tick_labels.clone(),
+            minor_tick_marks: self.minor_tick_marks.clone(),
+            minor_tick_labels: self.minor_tick_labels.clone(),
             grid: self.grid,
             limits: self.limits,
             visible: self.visible,

@@ -9,12 +9,11 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         },
-        legend: true,
         xaxis: plt::Axis {
             label: "x [arbitrary units]",
             limits: plt::Limits::Manual { min: 0.0, max: 50.0 },
-            major_ticks: plt::Ticker::linear(6),
-            minor_ticks: plt::Ticker::linear(31).with_labels(&[]),
+            major_tick_marks: plt::TickSpacing::Count(6),
+            minor_tick_marks: plt::TickSpacing::Count(31),
             ..plt::SubplotDescriptor::detailed().xaxis
         },
         yaxis: plt::Axis {
@@ -23,8 +22,8 @@ fn main() {
             ..plt::SubplotDescriptor::detailed().yaxis
         },
         secondary_xaxis: plt::Axis {
-            major_ticks: plt::Ticker::linear(6).with_labels(&[]),
-            minor_ticks: plt::Ticker::linear(31).with_labels(&[]),
+            major_tick_marks: plt::TickSpacing::Count(6),
+            minor_tick_marks: plt::TickSpacing::Count(31),
             ..plt::SubplotDescriptor::detailed().xaxis
         },
         ..plt::SubplotDescriptor::detailed()
@@ -37,11 +36,7 @@ fn main() {
     });
 
     // make figure and add subplot
-    let mut fig = <plt::Figure>::new(&plt::FigureDescriptor {
-        //dpi: 300,
-        //face_color: plt::Color::TRANSPARENT,
-        ..Default::default()
-    });
+    let mut fig = <plt::Figure>::new(&plt::FigureDescriptor::default());
     fig.add_subplot((1, 1, 1), subplot).unwrap();
 
     // save figure to file
