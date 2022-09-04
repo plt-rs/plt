@@ -207,8 +207,11 @@ impl Default for SubplotFormat {
 /// Indicates which side of the axes ticks should point towards.
 #[derive(Copy, Clone, Debug)]
 pub enum TickDirection {
+    /// Ticks are inside the axis lines.
     Inner,
+    /// Ticks are outside the axis lines.
     Outer,
+    /// Ticks are both inside and outside the axis lines.
     Both,
 }
 
@@ -235,18 +238,27 @@ pub struct Axis<S: AsRef<str>> {
 
 #[derive(Clone, Debug)]
 pub enum TickSpacing {
+    /// Tick marks are present and located by the library.
     On,
+    /// Tick marks are only present if a plot uses this axis.
     Auto,
+    /// No tick marks on this axis.
     None,
+    /// There are a set number of tick marks, evenly spaced.
     Count(u16),
+    /// Tick marks are manually placed.
     Manual(Vec<f64>),
 }
 
 #[derive(Clone, Debug)]
 pub enum TickLabels {
+    /// Tick labels are present and determined by the library.
     On,
+    /// Tick labels are only present if a plot uses this axis.
     Auto,
+    /// No tick labels on this axis.
     None,
+    /// Tick labels are manually set.
     Manual(Vec<String>),
 }
 
