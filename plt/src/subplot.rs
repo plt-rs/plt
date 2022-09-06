@@ -618,7 +618,7 @@ pub enum MarkerStyle {
 }
 
 /// The object that represents a whole subplot and is used to draw plotted data.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Subplot<'a> {
     pub(crate) format: SubplotFormat,
     pub(crate) plot_infos: Vec<PlotInfo<'a>>,
@@ -679,7 +679,7 @@ impl<'a> Subplot<'a> {
 // traits
 
 /// Implemented for data that can be represented by pairs of floats to be plotted.
-pub trait SeriesData: std::fmt::Debug {
+pub trait SeriesData: dyn_clone::DynClone + std::fmt::Debug {
     /// Returns data in an [`Iterator`] over x, y pairs.
     fn data<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
     /// The smallest x-value.
@@ -691,6 +691,8 @@ pub trait SeriesData: std::fmt::Debug {
     /// The largest y-value.
     fn ymax(&self) -> f64;
 }
+
+dyn_clone::clone_trait_object!(SeriesData);
 
 // private
 
@@ -728,7 +730,7 @@ impl<S: AsRef<str>> Axis<S> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct PlotInfo<'a> {
     //TODO implement legend
     #[allow(dead_code)]

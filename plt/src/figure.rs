@@ -3,6 +3,7 @@ use crate::subplot::{
     Subplot, TickDirection, TickSpacing, TickLabels, Grid, Limits, LineStyle,
     AxisType, Line, MarkerStyle,
 };
+use crate::layout::{Layout, FractionalArea};
 
 use std::{iter, ops, path};
 use std::collections::HashMap;
@@ -59,7 +60,28 @@ impl<'a, B: Backend> Figure<'a, B> {
         }
     }
 
+    /// Adds subplots to the figure through a [`Layout`].
+    pub fn set_layout<'b, L: Layout<'a>>(
+        &'b mut self,
+        layout: L,
+    ) -> Result<(), PltError> {
+        let (mut subplots, frac_areas): (Vec<Subplot>, Vec<FractionalArea>) = layout.subplots().into_iter().unzip();
+
+        if let Some(area) = frac_areas.iter().find(|area| !area.valid()) {
+            return Err(PltError::InvalidSubplotArea(*area))
+        }
+        let mut subplot_areas = frac_areas.iter()
+            .map(|fa| fa.to_area(self.size))
+            .collect();
+
+        self.subplots.append(&mut subplots);
+        self.subplot_areas.append(&mut subplot_areas);
+
+        Ok(())
+    }
+
     /// Adds a subplot to the figure in a 1-indexed location defined by a grid scheme.
+    #[deprecated(since = "0.3.0", note = "subplots should be added to figures though layouts with Figure::set_layout.")]
     pub fn add_subplot<'b>(
         &'b mut self,
         (nrows, ncols, index): (u32, u32, u32),

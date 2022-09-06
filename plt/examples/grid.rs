@@ -61,12 +61,11 @@ fn main() {
     });
 
     // make figure and add subplot
-    let mut fig = <plt::Figure>::new(&plt::FigureDescriptor {
-        //dpi: 300,
-        //face_color: plt::Color::TRANSPARENT,
-        ..Default::default()
-    });
-    fig.set_layout(plt::SingleLayout::new(subplot)).unwrap();
+    let mut fig = <plt::Figure>::new(&plt::FigureDescriptor::default());
+    fig.set_layout(plt::GridLayout::from_array(vec![
+        [Some(subplot.clone()), None],
+        [Some(subplot.clone()), Some(subplot.clone())],
+    ])).unwrap();
 
     // save figure to file
     fig.draw_file(plt::FileFormat::Png, "test.png").unwrap();

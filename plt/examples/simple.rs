@@ -23,7 +23,7 @@ fn main() {
 
     // make figure and add subplot
     let mut fig = <plt::Figure>::new(&plt::FigureDescriptor::default());
-    fig.add_subplot((1, 1, 1), sp).unwrap();
+    fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
 
     // save figure to file
     fig.draw_file(plt::FileFormat::Png, "test.png").unwrap();

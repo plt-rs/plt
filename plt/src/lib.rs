@@ -8,10 +8,12 @@
 
 mod figure;
 mod subplot;
+mod layout;
 
 // bring pub elements from submodules into main lib module
 pub use figure::*;
 pub use subplot::*;
+pub use layout::*;
 
 // re-export necessary elements from plt-draw
 pub use draw::{Canvas as Backend, CairoCanvas as CairoBackend, Color, FontName, FileFormat};
@@ -25,10 +27,19 @@ pub enum PltError {
     /// Returned in the case of a subplot index that is out of bounds.
     #[error("index `{index}` is out of range for figure with {nrows} rows and {ncols} columns")]
     InvalidIndex { index: u32, nrows: u32, ncols: u32 },
+    /// Returned in the case of a subplot index that is out of bounds.
+    #[error("row index `{row}` is out of range for layout with {nrows} rows")]
+    InvalidRow { row: usize, nrows: usize },
+    /// Returned in the case of a subplot index that is out of bounds.
+    #[error("column index `{col}` is out of range for layout with {ncols} columns")]
+    InvalidColumn { col: usize, ncols: usize },
     /// Returned when tick mark locations has an unusable value.
     #[error("one or more ticks have invalid locations: `{0}`")]
     BadTickPlacement(String),
     /// Returned when a tick label is not drawable.
     #[error("{0}")]
     BadTickLabels(String),
+    /// Returned when the provided area of a subplot is not valid.
+    #[error("{0:?} is not a valid fractional area")]
+    InvalidSubplotArea(layout::FractionalArea),
 }
