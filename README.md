@@ -8,7 +8,7 @@ A plotting library with a focus on publication level aesthetics and ergonomic co
 ## Structure
 - Plots are drawn on a `Subplot`.
 - One or more subplots are organized in a `Layout`.
-- The layout is added to a `Figure`, which is used to draw to a file or `Backend`.
+- The layout is added to a `Figure`, which is used to draw to a file or directly to a `Backend`.
 
 ## Use
 
