@@ -637,7 +637,7 @@ impl SeriesData for StepData<'_> {
     fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
             self.edges.windows(2).into_iter().flatten().cloned(),
-            self.ydata.iter().map(|y| [y, y]).flatten().cloned(),
+            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
         ))
     }
 
@@ -693,7 +693,7 @@ impl SeriesData for StepDataOwned {
     fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
         Box::new(iter::zip(
             self.edges.windows(2).into_iter().flatten().cloned(),
-            self.ydata.iter().map(|y| [y, y]).flatten().cloned(),
+            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
         ))
     }
 
