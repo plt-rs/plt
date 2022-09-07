@@ -6,13 +6,13 @@
 A plotting library with a focus on publication level aesthetics and ergonomic control.
 
 ## Structure
-- Plots are drawn on a [`Subplot`].
-- One or more subplots are organized in a [`Layout`].
-- The layout is added to a [`Figure`], which is used to draw to a file or [`Backend`].
+- Plots are drawn on a `Subplot`.
+- One or more subplots are organized in a `Layout`.
+- The layout is added to a `Figure`, which is used to draw to a file or `Backend`.
 
 ## Use
 
-To get started, see the [Examples](https://github.com/plt-rs/plt/tree/main/plt/examples) directory in the main repository.
+To get started, see the [examples](https://github.com/plt-rs/plt/tree/main/plt/examples) directory in the main repository.
 
 ### Example
 ```rust

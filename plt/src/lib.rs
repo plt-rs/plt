@@ -7,7 +7,7 @@
 //!
 //! # Use
 //!
-//! To get started, see the [Examples](https://github.com/plt-rs/plt/tree/main/plt/examples) directory in the main repository.
+//! To get started, see the [examples](https://github.com/plt-rs/plt/tree/main/plt/examples) directory in the main repository.
 //!
 //! ### Example
 //! ```rust
