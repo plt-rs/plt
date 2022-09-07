@@ -1,5 +1,3 @@
-#![allow(clippy::field_reassign_with_default)]
-
 fn main() {
     // create data
     let xs: Vec<f64> = (0..=100)
@@ -13,28 +11,26 @@ fn main() {
         .rev()
         .collect();
 
-    // subplot configuration
-    let mut sp_desc = plt::SubplotDescriptor::default();
-    sp_desc.title = "double plot";
-    sp_desc.yaxis.label = "y1 data";
-    sp_desc.secondary_yaxis.label = "y2 data";
-    sp_desc.xaxis.label = "x data";
-
     // create subplot
-    let mut sp = plt::Subplot::new(&sp_desc);
+    let mut sp = plt::Subplot::builder()
+        .title("double plot")
+        .xlabel("x data")
+        .ylabel("y1 data")
+        .secondary_ylabel("y2 data")
+        .build();
 
     // plot data on primary y-axis
-    sp.plot(plt::PlotDescriptor::from_data(plt::PlotData::new(&xs, &y1s).unwrap()));
+    sp.plot(plt::PlotData::new(&xs, &y1s)).unwrap();
 
     // plot data on secondary y-axis
-    sp.use_secondary_yaxis();
-    sp.plot(plt::PlotDescriptor::from_data(plt::PlotData::new(&xs, &y2s).unwrap()));
+    sp.plotter()
+        .use_secondary_yaxis()
+        .plot(plt::PlotData::new(&xs, &y2s)).unwrap();
 
     // make figure and add subplot
-    let mut fig = <plt::Figure>::new(&plt::FigureDescriptor::default());
+    let mut fig = <plt::Figure>::default();
     fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
 
     // save figure to file
-    fig.draw_file(plt::FileFormat::Png, "test.png").unwrap();
-    fig.draw_file(plt::FileFormat::Svg, "test.svg").unwrap();
+    fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
 }

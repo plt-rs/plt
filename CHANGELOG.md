@@ -10,17 +10,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### plt
 
+- `SubplotBuilder` and `Plotter` for builder pattern subplot and plot construction.
+- `builder` function to `Subplot` for getting a builder.
+- Default constructor for `Figure`.
 - Layouts for setting subplot areas
 - `visible` member of SubplotDescriptor to control the visibility of an axis line.
+- grid example.
 
 ### Changed
 
 #### plt
 
+- Moved from an init struct pattern, to builder pattern for constructing plots and subplots.
+- Changed `FigureDescriptor` to `FigureFormat`.
+- Changed name of pretty example to detailed.
 - Split `Ticker` into separate `TickSpacing` and `TickLabels` structs.
 - `Auto` varients of `TickSpacing` and `TickLabels` now determine if they should exist
   based on whether a plot uses that axis.
-- Deprecated `Figure::add_subplot` in favor of using layouts.
+- Updated examples.
+
+### Removed
+
+#### plt
+
+- `SubplotDescriptor`, `Axis`, and `PlotDescriptor` from public API.
+- Removed `Figure::add_subplot` in favor of using layouts.
 
 ## [0.2.1] - 2022-09-02
 

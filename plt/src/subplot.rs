@@ -2,121 +2,238 @@ use crate::{PltError, Color, FontName};
 
 use std::{f64, iter};
 
-/// Describes the configuration of a [`Subplot`].
+/// The object that represents a whole subplot and is used to draw plotted data.
 #[derive(Clone, Debug)]
-pub struct SubplotDescriptor<'a> {
-    /// The format of this subplot.
-    pub format: SubplotFormat,
-    /// The title displayed at the top of this subplot.
-    pub title: &'a str,
-    /// Determines if there is a legend.
-    pub legend: bool,
-    /// The default axis corresponding to x-values.
-    pub xaxis: Axis<&'a str>,
-    /// The default axis corresponding to y-values.
-    pub yaxis: Axis<&'a str>,
-    /// The secondary axis corresponding to x-values.
-    pub secondary_xaxis: Axis<&'a str>,
-    /// The secondary axis corresponding to y-values.
-    pub secondary_yaxis: Axis<&'a str>,
+pub struct Subplot<'a> {
+    pub(crate) format: SubplotFormat,
+    pub(crate) plot_infos: Vec<PlotInfo<'a>>,
+    pub(crate) title: String,
+    pub(crate) xaxis: AxisBuf,
+    pub(crate) yaxis: AxisBuf,
+    pub(crate) secondary_xaxis: AxisBuf,
+    pub(crate) secondary_yaxis: AxisBuf,
 }
-impl SubplotDescriptor<'_> {
-    /// Constructor for describing a subplot with a high level of detail.
-    pub fn detailed() -> Self {
+impl<'a> Subplot<'a> {
+    /// Returns a builder with default settings for constructing a subplot.
+    pub fn builder() -> SubplotBuilder<'a> {
+        SubplotBuilder { desc: SubplotDescriptor::default() }
+    }
+
+    /// Returns a builder with detailed settings for constructing a subplot.
+    pub fn builder_detailed() -> SubplotBuilder<'a> {
+        SubplotBuilder { desc: SubplotDescriptor::detailed() }
+    }
+
+    /// Returns a [`Plotter`] for plotting X, Y data on this subplot.
+    pub fn plotter<'b, D: SeriesData + Clone + Default + 'a>(&'b mut self) -> Plotter<'a, 'b, D> {
+        Plotter {
+            subplot: self,
+            desc: PlotDescriptor::default(),
+        }
+    }
+
+    /// Plots X, Y data on this subplot with default plot formatting.
+    /// Shortcut for calling `.plotter().plot()` on a [`Subplot`].
+    pub fn plot<D: SeriesData + Clone + Default + 'a>(
+        &mut self,
+        data: D,
+    ) -> Result<(), PltError> {
+        let plotter = Plotter {
+            subplot: self,
+            desc: PlotDescriptor::default(),
+        };
+
+        plotter.plot(data)
+    }
+
+    /// Returns the format of this plot.
+    pub fn format(&self) -> &SubplotFormat {
+        &self.format
+    }
+}
+impl<'a> Subplot<'a> {
+    pub(crate) fn new(desc: &SubplotDescriptor) -> Self {
         Self {
-            format: SubplotFormat::default(),
-            title: "",
-            legend: false,
-            xaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::Major,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            yaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::Major,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            secondary_xaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            secondary_yaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
+            format: desc.format.clone(),
+            plot_infos: vec![],
+            title: desc.title.to_string(),
+            xaxis: desc.xaxis.to_buf(),
+            yaxis: desc.yaxis.to_buf(),
+            secondary_xaxis: desc.secondary_xaxis.to_buf(),
+            secondary_yaxis: desc.secondary_yaxis.to_buf(),
         }
     }
 }
-impl Default for SubplotDescriptor<'_> {
-    fn default() -> Self {
-        Self {
-            format: SubplotFormat::default(),
-            title: "",
-            legend: false,
-            xaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::Auto,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            yaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::Auto,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            secondary_xaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::Auto,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            secondary_yaxis: Axis {
-                label: "",
-                major_tick_marks: TickSpacing::Auto,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
-        }
+impl<'a> Subplot<'a> {
+    fn plot_desc<D: SeriesData + Clone + 'a>(&mut self, desc: PlotDescriptor<D>) {
+        let line = if desc.line {
+            Some(desc.line_format)
+        } else {
+            None
+        };
+        let marker = if desc.marker {
+            Some(desc.marker_format)
+        } else {
+            None
+        };
+
+        self.plot_infos.push(
+            PlotInfo {
+                label: desc.label.to_string(),
+                data: Box::new(desc.data),
+                line,
+                marker,
+                xaxis: desc.xaxis,
+                yaxis: desc.yaxis,
+            }
+        );
+    }
+}
+
+/// Builds and sets the configuration for a [`Subplot`].
+pub struct SubplotBuilder<'a> {
+    desc: SubplotDescriptor<'a>,
+}
+impl<'a> SubplotBuilder<'a> {
+    /// Builds the subplot.
+    pub fn build(self) -> Subplot<'a> {
+        Subplot::new(&self.desc)
+    }
+
+    /// Sets the title of the subplot.
+    pub fn title(mut self, title: &'a str) -> Self {
+        self.desc.title = title;
+        self
+    }
+
+    /// Sets the format of the subplot.
+    pub fn format(mut self, format: SubplotFormat) -> Self {
+        self.desc.format = format;
+        self
+    }
+
+    /// Sets the label of the default x-axis
+    pub fn xlabel(mut self, label: &'a str) -> Self {
+        self.desc.xaxis.label = label;
+        self
+    }
+    /// Sets the limits of the default x-axis
+    pub fn xlimits(mut self, limits: Limits) -> Self {
+        self.desc.xaxis.limits = limits;
+        self
+    }
+    /// Sets the major tick mark locations of the default x-axis
+    pub fn xmajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.xaxis.major_tick_marks = spacing;
+        self
+    }
+    /// Sets the major tick mark labels of the default x-axis
+    pub fn xmajor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.xaxis.major_tick_labels = labels;
+        self
+    }
+    /// Sets the minor tick mark locations of the default x-axis
+    pub fn xminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.xaxis.minor_tick_marks = spacing;
+        self
+    }
+    /// Sets the minor tick mark labels of the default x-axis
+    pub fn xminor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.xaxis.minor_tick_labels = labels;
+        self
+    }
+
+    /// Sets the label of the default y-axis
+    pub fn ylabel(mut self, label: &'a str) -> Self {
+        self.desc.yaxis.label = label;
+        self
+    }
+    /// Sets the limits of the default y-axis
+    pub fn ylimits(mut self, limits: Limits) -> Self {
+        self.desc.yaxis.limits = limits;
+        self
+    }
+    /// Sets the major tick mark locations of the default y-axis
+    pub fn ymajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.yaxis.major_tick_marks = spacing;
+        self
+    }
+    /// Sets the major tick mark labels of the default y-axis
+    pub fn ymajor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.yaxis.major_tick_labels = labels;
+        self
+    }
+    /// Sets the minor tick mark locations of the default y-axis
+    pub fn yminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.yaxis.minor_tick_marks = spacing;
+        self
+    }
+    /// Sets the minor tick mark labels of the default y-axis
+    pub fn yminor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.yaxis.minor_tick_labels = labels;
+        self
+    }
+
+    /// Sets the label of the secondary x-axis
+    pub fn secondary_xlabel(mut self, label: &'a str) -> Self {
+        self.desc.secondary_xaxis.label = label;
+        self
+    }
+    /// Sets the limits of the secondary x-axis
+    pub fn secondary_xlimits(mut self, limits: Limits) -> Self {
+        self.desc.secondary_xaxis.limits = limits;
+        self
+    }
+    /// Sets the major tick mark locations of the secondary x-axis
+    pub fn secondary_xmajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.secondary_xaxis.major_tick_marks = spacing;
+        self
+    }
+    /// Sets the major tick mark labels of the secondary x-axis
+    pub fn secondary_xmajor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.secondary_xaxis.major_tick_labels = labels;
+        self
+    }
+    /// Sets the minor tick mark locations of the secondary x-axis
+    pub fn secondary_xminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.secondary_xaxis.minor_tick_marks = spacing;
+        self
+    }
+    /// Sets the minor tick mark labels of the secondary x-axis
+    pub fn secondary_xminor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.secondary_xaxis.minor_tick_labels = labels;
+        self
+    }
+
+    /// Sets the label of the secondary y-axis
+    pub fn secondary_ylabel(mut self, label: &'a str) -> Self {
+        self.desc.secondary_yaxis.label = label;
+        self
+    }
+    /// Sets the limits of the secondary y-axis
+    pub fn secondary_ylimits(mut self, limits: Limits) -> Self {
+        self.desc.secondary_yaxis.limits = limits;
+        self
+    }
+    /// Sets the major tick mark locations of the secondary y-axis
+    pub fn secondary_ymajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.secondary_yaxis.major_tick_marks = spacing;
+        self
+    }
+    /// Sets the major tick mark labels of the secondary y-axis
+    pub fn secondary_ymajor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.secondary_yaxis.major_tick_labels = labels;
+        self
+    }
+    /// Sets the minor tick mark locations of the secondary y-axis
+    pub fn secondary_yminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
+        self.desc.secondary_yaxis.minor_tick_marks = spacing;
+        self
+    }
+    /// Sets the minor tick mark labels of the secondary y-axis
+    pub fn secondary_yminor_tick_labels(mut self, labels: TickLabels) -> Self {
+        self.desc.secondary_yaxis.minor_tick_labels = labels;
+        self
     }
 }
 
@@ -215,27 +332,7 @@ pub enum TickDirection {
     Both,
 }
 
-/// Configuration for an axis.
-#[derive(Clone, Debug)]
-pub struct Axis<S: AsRef<str>> {
-    /// The label desplayed by the axis.
-    pub label: S,
-    /// Determines the major tick mark locations on this axis.
-    pub major_tick_marks: TickSpacing,
-    /// Determines the major tick labels on this axis.
-    pub major_tick_labels: TickLabels,
-    /// Determines the minor tick mark locations and labels on this axis.
-    pub minor_tick_marks: TickSpacing,
-    /// Determines the minor tick labels on this axis.
-    pub minor_tick_labels: TickLabels,
-    /// Sets which, if any, tick marks on this axis have grid lines.
-    pub grid: Grid,
-    /// How the maximum and minimum plotted values should be set.
-    pub limits: Limits,
-    /// Whether to draw the axis line.
-    pub visible: bool,
-}
-
+/// Describes how tick mark locations are determined, if at all.
 #[derive(Clone, Debug)]
 pub enum TickSpacing {
     /// Tick marks are present and located by the library.
@@ -250,6 +347,7 @@ pub enum TickSpacing {
     Manual(Vec<f64>),
 }
 
+/// Describes how and whether tick mark labels are set.
 #[derive(Clone, Debug)]
 pub enum TickLabels {
     /// Tick labels are present and determined by the library.
@@ -282,37 +380,134 @@ pub enum Limits {
     Manual { min: f64, max: f64 },
 }
 
-/// Describes data and how it should be plotted.
-#[derive(Clone, Debug)]
-pub struct PlotDescriptor<'a, D: SeriesData> {
-    /// The label corresponding to this data, displayed in a legend.
-    pub label: &'a str,
-    /// The data to be plotted.
-    pub data: D,
-    /// The format of lines, optionally drawn between data points.
-    pub line: Option<Line>,
-    /// The format of markers, optionally drawn at data points.
-    pub marker: Option<Marker>,
+/// Plots data on a subplot using the builder pattern.
+pub struct Plotter<'a, 'b, D: SeriesData + Clone> {
+    subplot: &'b mut Subplot<'a>,
+    desc: PlotDescriptor<D>,
 }
-impl<'a, D: SeriesData> PlotDescriptor<'a, D> {
-    /// Creates a plot descriptor from just data with other values defaulted.
-    pub fn from_data(data: D) -> Self {
-        Self {
-            label: "",
+impl<'a, 'b, D: SeriesData + Clone + 'a> Plotter<'a, 'b, D> {
+    /// Sets the data to be plotted and consumes the plotter.
+    pub fn plot(self, data: D) -> Result<(), PltError> {
+        if !data.is_correctly_sized() {
+            return Err(PltError::InvalidData("Data is not correctly sized".to_owned()))
+        } else if data.data().any(|(x, y)| x.is_nan() || y.is_nan()) {
+            return Err(PltError::InvalidData("Data has NaN value".to_owned()))
+        }
+
+        self.subplot.plot_desc(PlotDescriptor {
             data,
-            line: Some(Line::default()),
-            marker: None,
-        }
+            ..self.desc
+        });
+
+        Ok(())
     }
-}
-impl<D: SeriesData + Default> Default for PlotDescriptor<'_, D> {
-    fn default() -> Self {
-        Self {
-            label: "",
-            data: D::default(),
-            line: Some(Line::default()),
-            marker: None,
+
+    /// Uses the secondary X-Axis to reference x-data.
+    pub fn use_secondary_xaxis(mut self) -> Self {
+        self.desc.xaxis = AxisType::SecondaryX;
+
+        self
+    }
+
+    /// Uses the secondary Y-Axis to reference y-data.
+    pub fn use_secondary_yaxis(mut self) -> Self {
+        self.desc.yaxis = AxisType::SecondaryY;
+
+        self
+    }
+
+    /// Labels the data for use in a legend.
+    pub fn label<S: AsRef<str>>(mut self, label: S) -> Self {
+        self.desc.label = label.as_ref().to_string();
+
+        self
+    }
+
+    /// Defines whether to draw lines between points and the line style.
+    /// By default, lines are drawn and `Solid`.
+    pub fn line(mut self, line_style: Option<LineStyle>) -> Self {
+        if let Some(line_style) = line_style {
+            self.desc.line = true;
+            self.desc.line_format.style = line_style;
+        } else {
+            self.desc.line = false;
         }
+
+        self
+    }
+
+    /// Sets the width of the lines.
+    pub fn line_width(mut self, width: u32) -> Self {
+        self.desc.line_format.width = width;
+
+        self
+    }
+
+    /// Overrides the default line color.
+    /// By default, line colors are determined by cycling through [`SubplotFormat::color_cycle`].
+    pub fn line_color(mut self, color: Color) -> Self {
+        self.desc.line_format.color_override = Some(color);
+
+        self
+    }
+
+    /// Defines whether to draw markers at points and the marker style.
+    /// By default, markers are not drawn.
+    pub fn marker(mut self, marker_style: Option<MarkerStyle>) -> Self {
+        if let Some(marker_style) = marker_style {
+            self.desc.marker = true;
+            self.desc.marker_format.style = marker_style;
+        } else {
+            self.desc.marker = false;
+        }
+
+        self
+    }
+
+    /// Sets the marker size.
+    pub fn marker_size(mut self, size: u32) -> Self {
+        self.desc.marker_format.size = size;
+
+        self
+    }
+
+    /// Overrides the default marker color.
+    /// By default, marker colors are determined by cycling through [`SubplotFormat::color_cycle`].
+    pub fn marker_color(mut self, color: Color) -> Self {
+        self.desc.marker_format.color_override = Some(color);
+
+        self
+    }
+
+    /// Sets whether to draw marker outlines.
+    /// By default, marker outlines are not drawn.
+    pub fn marker_outline(mut self, on: bool) -> Self {
+        self.desc.marker_format.outline = on;
+
+        self
+    }
+
+    /// Overrides the default outline color for marker outlines.
+    /// By default, marker outline colors are determined by cycling through [`SubplotFormat::color_cycle`].
+    pub fn marker_outline_color(mut self, color: Color) -> Self {
+        self.desc.marker_format.outline_format.color_override = Some(color);
+
+        self
+    }
+
+    /// Sets the width of marker outlines.
+    pub fn marker_outline_width(mut self, width: u32) -> Self {
+        self.desc.marker_format.outline_format.width = width;
+
+        self
+    }
+
+    /// Sets the line style of marker outlines.
+    /// Defaults to `Solid`.
+    pub fn marker_outline_style(mut self, line_style: LineStyle) -> Self {
+        self.desc.marker_format.outline_format.style = line_style;
+
+        self
     }
 }
 
@@ -337,6 +532,10 @@ impl SeriesData for PlotData<'_> {
         )
     }
 
+    fn is_correctly_sized(&self) -> bool {
+        self.xdata.len() == self.ydata.len()
+    }
+
     fn xmin(&self) -> f64 {
         self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
     }
@@ -355,23 +554,14 @@ impl<'a> PlotData<'a> {
     pub fn new<
         Xs: Into<ndarray::ArrayView1<'a, f64>>,
         Ys: Into<ndarray::ArrayView1<'a, f64>>,
-    >(xs: Xs, ys: Ys) -> Result<Self, PltError> {
+    >(xs: Xs, ys: Ys) -> Self {
         let xdata = xs.into();
         let ydata = ys.into();
 
-        // check that data is valid
-        if xdata.len() != ydata.len() {
-            return Err(PltError::InvalidData("X and Y data are different lengths".to_owned()))
-        } else if xdata.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("X data has a NaN value".to_owned()))
-        } else if ydata.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("Y data has a NaN value".to_owned()))
-        }
-
-        Ok(Self {
+        Self {
             xdata,
             ydata,
-        })
+        }
     }
 }
 
@@ -396,6 +586,10 @@ impl SeriesData for PlotDataOwned {
         )
     }
 
+    fn is_correctly_sized(&self) -> bool {
+        self.xdata.len() == self.ydata.len()
+    }
+
     fn xmin(&self) -> f64 {
         self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
     }
@@ -414,23 +608,14 @@ impl PlotDataOwned {
     pub fn new<
         Xs: Into<ndarray::Array1<f64>>,
         Ys: Into<ndarray::Array1<f64>>,
-    >(xs: Xs, ys: Ys) -> Result<Self, PltError> {
+    >(xs: Xs, ys: Ys) -> Self {
         let xdata = xs.into();
         let ydata = ys.into();
 
-        // check that data is valid
-        if xdata.len() != ydata.len() {
-            return Err(PltError::InvalidData("X and Y data are different lengths".to_owned()))
-        } else if xdata.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("X data has a NaN value".to_owned()))
-        } else if ydata.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("Y data has a NaN value".to_owned()))
-        }
-
-        Ok(Self {
+        Self {
             xdata,
             ydata,
-        })
+        }
     }
 }
 
@@ -456,6 +641,10 @@ impl SeriesData for StepData<'_> {
         ))
     }
 
+    fn is_correctly_sized(&self) -> bool {
+        self.edges.len() == self.ydata.len() + 1
+    }
+
     fn xmin(&self) -> f64 {
         self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
     }
@@ -471,30 +660,22 @@ impl SeriesData for StepData<'_> {
 }
 impl<'a> StepData<'a> {
     /// Main constructor, taking separate array views of steps and y-values.
+    /// There should be one more step edge than y-values.
     pub fn new<
         Es: Into<ndarray::ArrayView1<'a, f64>>,
         Ys: Into<ndarray::ArrayView1<'a, f64>>,
-    >(edges: Es, ys: Ys) -> Result<Self, PltError> {
+    >(edges: Es, ys: Ys) -> Self {
         let edges = edges.into();
         let ydata = ys.into();
 
-        // check that data is valid
-        if edges.len() != (ydata.len() + 1) {
-            return Err(PltError::InvalidData("X and Y data are different lengths".to_owned()))
-        } else if edges.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("X data has a NaN value".to_owned()))
-        } else if ydata.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("Y data has a NaN value".to_owned()))
-        }
-
-        Ok(Self {
+        Self {
             edges,
             ydata,
-        })
+        }
     }
 }
 
-/// Holds owned data to be plotted.
+/// Holds owned step data to be plotted.
 #[derive(Clone, Debug)]
 pub struct StepDataOwned {
     edges: ndarray::Array1<f64>,
@@ -516,6 +697,10 @@ impl SeriesData for StepDataOwned {
         ))
     }
 
+    fn is_correctly_sized(&self) -> bool {
+        self.edges.len() == self.ydata.len() + 1
+    }
+
     fn xmin(&self) -> f64 {
         self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
     }
@@ -530,27 +715,19 @@ impl SeriesData for StepDataOwned {
     }
 }
 impl StepDataOwned {
-    /// Main constructor, taking separate arrays of steps and y-values.
+    /// Main constructor, taking separate arrays of step edges and y-values.
+    /// There should be one more step edge than y-values.
     pub fn new<
         Es: Into<ndarray::Array1<f64>>,
         Ys: Into<ndarray::Array1<f64>>,
-    >(edges: Es, ys: Ys) -> Result<Self, PltError> {
+    >(edges: Es, ys: Ys) -> Self {
         let edges = edges.into();
         let ydata = ys.into();
 
-        // check that data is valid
-        if edges.len() != (ydata.len() + 1) {
-            return Err(PltError::InvalidData("X and Y data are different lengths".to_owned()))
-        } else if edges.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("X data has a NaN value".to_owned()))
-        } else if ydata.iter().any(|&v| v.is_nan()) {
-            return Err(PltError::InvalidData("Y data has a NaN value".to_owned()))
-        }
-
-        Ok(Self {
+        Self {
             edges,
             ydata,
-        })
+        }
     }
 }
 
@@ -594,8 +771,10 @@ pub struct Marker {
     pub size: u32,
     /// Optionally overrides the default fill color of the marker.
     pub color_override: Option<Color>,
-    /// Optionally adds an outline.
-    pub outline: Option<Line>,
+    /// Whether to draw an outline.
+    pub outline: bool,
+    /// Format of an optional outline.
+    pub outline_format: Line,
 }
 impl Default for Marker {
     fn default() -> Self {
@@ -603,7 +782,11 @@ impl Default for Marker {
             style: MarkerStyle::Circle,
             size: 3,
             color_override: None,
-            outline: None,
+            outline: false,
+            outline_format: Line {
+                width: 2,
+                ..Default::default()
+            },
         }
     }
 }
@@ -617,71 +800,14 @@ pub enum MarkerStyle {
     Square,
 }
 
-/// The object that represents a whole subplot and is used to draw plotted data.
-#[derive(Clone, Debug)]
-pub struct Subplot<'a> {
-    pub(crate) format: SubplotFormat,
-    pub(crate) plot_infos: Vec<PlotInfo<'a>>,
-    pub(crate) title: String,
-    pub(crate) xaxis: AxisBuf,
-    pub(crate) yaxis: AxisBuf,
-    pub(crate) secondary_xaxis: AxisBuf,
-    pub(crate) secondary_yaxis: AxisBuf,
-    pub(crate) primary_xaxis_id: AxisType,
-    pub(crate) primary_yaxis_id: AxisType,
-}
-impl<'a> Subplot<'a> {
-    /// The main constructor.
-    pub fn new(desc: &SubplotDescriptor) -> Self {
-        Self {
-            format: desc.format.clone(),
-            plot_infos: vec![],
-            title: desc.title.to_string(),
-            xaxis: desc.xaxis.to_buf(),
-            yaxis: desc.yaxis.to_buf(),
-            secondary_xaxis: desc.secondary_xaxis.to_buf(),
-            secondary_yaxis: desc.secondary_yaxis.to_buf(),
-            primary_xaxis_id: AxisType::X,
-            primary_yaxis_id: AxisType::Y,
-        }
-    }
-
-    /// Plots x, y data points.
-    pub fn plot<D: SeriesData + 'a>(&mut self, desc: PlotDescriptor<'a, D>) {
-        self.plot_infos.push(
-            PlotInfo {
-                label: desc.label.to_string(),
-                data: Box::new(desc.data),
-                line: desc.line,
-                marker: desc.marker,
-                xaxis: self.primary_xaxis_id,
-                yaxis: self.primary_yaxis_id,
-            }
-        );
-    }
-
-    /// Returns the format of this plot.
-    pub fn format(&self) -> &SubplotFormat {
-        &self.format
-    }
-
-    /// Switch y-axis used by plotting calls after this point to the secondary y-axis.
-    pub fn use_secondary_yaxis(&mut self) {
-        self.primary_yaxis_id = AxisType::SecondaryY;
-    }
-
-    /// Switch y-axis used by plotting calls after this point to the default y-axis.
-    pub fn use_default_yaxis(&mut self) {
-        self.primary_yaxis_id = AxisType::Y;
-    }
-}
-
 // traits
 
 /// Implemented for data that can be represented by pairs of floats to be plotted.
 pub trait SeriesData: dyn_clone::DynClone + std::fmt::Debug {
     /// Returns data in an [`Iterator`] over x, y pairs.
     fn data<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
+    /// Determines if the provided data is valid.
+    fn is_correctly_sized(&self) -> bool;
     /// The smallest x-value.
     fn xmin(&self) -> f64;
     /// The largest x-value.
@@ -695,6 +821,176 @@ pub trait SeriesData: dyn_clone::DynClone + std::fmt::Debug {
 dyn_clone::clone_trait_object!(SeriesData);
 
 // private
+
+/// Describes the configuration of a [`Subplot`].
+#[derive(Clone, Debug)]
+pub(crate) struct SubplotDescriptor<'a> {
+    /// The format of this subplot.
+    pub format: SubplotFormat,
+    /// The title displayed at the top of this subplot.
+    pub title: &'a str,
+    /// The default axis corresponding to x-values.
+    pub xaxis: Axis<&'a str>,
+    /// The default axis corresponding to y-values.
+    pub yaxis: Axis<&'a str>,
+    /// The secondary axis corresponding to x-values.
+    pub secondary_xaxis: Axis<&'a str>,
+    /// The secondary axis corresponding to y-values.
+    pub secondary_yaxis: Axis<&'a str>,
+}
+impl SubplotDescriptor<'_> {
+    /// Constructor for describing a subplot with a high level of detail.
+    pub fn detailed() -> Self {
+        Self {
+            format: SubplotFormat::default(),
+            title: "",
+            xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::Major,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::Major,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::On,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::On,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+        }
+    }
+}
+impl Default for SubplotDescriptor<'_> {
+    fn default() -> Self {
+        Self {
+            format: SubplotFormat::default(),
+            title: "",
+            xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_xaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+            secondary_yaxis: Axis {
+                label: "",
+                major_tick_marks: TickSpacing::Auto,
+                major_tick_labels: TickLabels::Auto,
+                minor_tick_marks: TickSpacing::None,
+                minor_tick_labels: TickLabels::None,
+                grid: Grid::None,
+                limits: Limits::Auto,
+                visible: true,
+            },
+        }
+    }
+}
+
+/// Describes data and how it should be plotted.
+#[derive(Clone, Debug)]
+pub(crate) struct PlotDescriptor<D: SeriesData + Clone> {
+    /// The label corresponding to this data, displayed in a legend.
+    pub label: String,
+    /// The data to be plotted.
+    pub data: D,
+    /// Whether to draw lines between data points.
+    pub line: bool,
+    /// Whether to draw markers at data points.
+    pub marker: bool,
+    /// The format of lines, optionally drawn between data points.
+    pub line_format: Line,
+    /// The format of markers, optionally drawn at data points.
+    pub marker_format: Marker,
+    /// Which axis to use as the x-axis.
+    pub xaxis: AxisType,
+    /// Which axis to use as the y-axis.
+    pub yaxis: AxisType,
+}
+impl<D: SeriesData + Clone + Default> Default for PlotDescriptor<D> {
+    fn default() -> Self {
+        Self {
+            label: String::new(),
+            data: D::default(),
+            line: true,
+            marker: false,
+            line_format: Line::default(),
+            marker_format: Marker::default(),
+            xaxis: AxisType::X,
+            yaxis: AxisType::Y,
+        }
+    }
+}
+
+/// Configuration for an axis.
+#[derive(Clone, Debug)]
+pub(crate) struct Axis<S: AsRef<str>> {
+    /// The label desplayed by the axis.
+    pub label: S,
+    /// Determines the major tick mark locations on this axis.
+    pub major_tick_marks: TickSpacing,
+    /// Determines the major tick labels on this axis.
+    pub major_tick_labels: TickLabels,
+    /// Determines the minor tick mark locations and labels on this axis.
+    pub minor_tick_marks: TickSpacing,
+    /// Determines the minor tick labels on this axis.
+    pub minor_tick_labels: TickLabels,
+    /// Sets which, if any, tick marks on this axis have grid lines.
+    pub grid: Grid,
+    /// How the maximum and minimum plotted values should be set.
+    pub limits: Limits,
+    /// Whether to draw the axis line.
+    pub visible: bool,
+}
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
 pub(crate) enum AxisType {
@@ -732,7 +1028,7 @@ impl<S: AsRef<str>> Axis<S> {
 
 #[derive(Clone, Debug)]
 pub(crate) struct PlotInfo<'a> {
-    //TODO implement legend
+    // TODO implement legend
     #[allow(dead_code)]
     pub label: String,
     pub data: Box<dyn SeriesData + 'a>,

@@ -8,26 +8,6 @@ use crate::layout::{Layout, FractionalArea};
 use std::{iter, ops, path};
 use std::collections::HashMap;
 
-/// Describes the configuration of a [`Figure`].
-#[derive(Clone, Debug)]
-pub struct FigureDescriptor {
-    /// The size, in inches, of the figure.
-    pub figsize: (f32, f32),
-    /// The dots (pixels) per inch of the figure.
-    pub dpi: u16,
-    /// The background color of the figure.
-    pub face_color: Color,
-}
-impl Default for FigureDescriptor {
-    fn default() -> Self {
-        Self {
-            figsize: (6.75, 6.75),
-            dpi: 100,
-            face_color: Color::WHITE,
-        }
-    }
-}
-
 /// Represents a whole figure, containing subplots, which can be drawn as an image.
 #[derive(Debug)]
 pub struct Figure<'a, B: Backend = CairoBackend> {
@@ -41,21 +21,21 @@ pub struct Figure<'a, B: Backend = CairoBackend> {
 }
 impl<'a, B: Backend> Figure<'a, B> {
     /// The main constructor.
-    pub fn new(desc: &FigureDescriptor) -> Self {
+    pub fn new(format: &FigureFormat) -> Self {
         // scaling factor for different DPIs
-        let scaling = desc.dpi as f32 / FigureDescriptor::default().dpi as f32;
+        let scaling = format.dpi as f32 / FigureFormat::default().dpi as f32;
 
         // size of figure in pixels
-        let width = (desc.figsize.0 * desc.dpi as f32).floor() as u32;
-        let height = (desc.figsize.1 * desc.dpi as f32).floor() as u32;
+        let width = (format.size.width * format.dpi as f32).floor() as u32;
+        let height = (format.size.height * format.dpi as f32).floor() as u32;
 
         Self {
             subplots: Vec::new(),
             subplot_areas: Vec::new(),
             size: draw::Size { width, height },
             scaling,
-            dpi: desc.dpi,
-            face_color: desc.face_color,
+            dpi: format.dpi,
+            face_color: format.face_color,
             phantom: std::marker::PhantomData,
         }
     }
@@ -78,37 +58,6 @@ impl<'a, B: Backend> Figure<'a, B> {
         self.subplot_areas.append(&mut subplot_areas);
 
         Ok(())
-    }
-
-    /// Adds a subplot to the figure in a 1-indexed location defined by a grid scheme.
-    #[deprecated(since = "0.3.0", note = "subplots should be added to figures though layouts with Figure::set_layout.")]
-    pub fn add_subplot<'b>(
-        &'b mut self,
-        (nrows, ncols, index): (u32, u32, u32),
-        subplot: Subplot<'a>,
-    ) -> Result<&mut Subplot<'a>, PltError> where 'a: 'b {
-        // check that index is valid
-        if index > nrows * ncols || index == 0 {
-            return Err(PltError::InvalidIndex { index, nrows, ncols })
-        }
-
-        // get zero indexed row and column numbers
-        let row = (index - 1) / ncols;
-        let col = (index - 1) % ncols;
-
-        // get extents in pixel counts
-        let xextent = (self.size.width / ncols) as f32;
-        let yextent = (self.size.height / nrows) as f32;
-
-        let xmin = (xextent * col as f32).ceil() as u32;
-        let xmax = (xmin as f32 + xextent).floor() as u32;
-        let ymin = (yextent * (nrows - 1 - row) as f32).ceil() as u32;
-        let ymax = (ymin as f32 + yextent).floor() as u32;
-
-        self.subplot_areas.push(draw::Area { xmin, xmax, ymin, ymax });
-        self.subplots.push(subplot);
-
-        Ok(self.subplots.last_mut().unwrap())
     }
 
     /// Draw figure to provided backend.
@@ -162,6 +111,38 @@ impl<'a, B: Backend> Figure<'a, B> {
     ) -> &mut Vec<Subplot<'a>> where 'a: 'b {
         &mut self.subplots
     }
+}
+impl<'a, B: Backend> Default for Figure<'a, B> {
+    fn default() -> Self {
+        Self::new(&FigureFormat::default())
+    }
+}
+
+/// Describes the configuration of a [`Figure`].
+#[derive(Clone, Debug)]
+pub struct FigureFormat {
+    /// The size of the figure, in inches.
+    pub size: FigSize,
+    /// The dots (pixels) per inch of the figure.
+    pub dpi: u16,
+    /// The background color of the figure.
+    pub face_color: Color,
+}
+impl Default for FigureFormat {
+    fn default() -> Self {
+        Self {
+            size: FigSize { width: 6.75, height: 6.75 },
+            dpi: 100,
+            face_color: Color::WHITE,
+        }
+    }
+}
+
+/// The size of a figure, in inches.
+#[derive(Copy, Clone, Debug)]
+pub struct FigSize {
+    pub width: f32,
+    pub height: f32,
 }
 
 // private
@@ -945,8 +926,8 @@ fn draw_subplot<B: Backend>(
             } else {
                 *default_color.next().unwrap()
             };
-            let line = if let Some(line) = marker.outline {
-                line
+            let line = if marker.outline {
+                marker.outline_format
             } else {
                 Line {
                     style: LineStyle::Solid,
