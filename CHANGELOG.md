@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   based on whether a plot uses that axis.
 - Updated examples.
 
+#### plt-draw
+
+- Changed `GraphicsType` to `ImageType`.
+
 ### Removed
 
 #### plt

@@ -195,24 +195,24 @@ pub struct CanvasDescriptor {
     /// The background color of the canvas.
     pub face_color: Color,
     /// What type of image format will be drawn.
-    pub graphics_type: GraphicsType,
+    pub graphics_type: ImageFormat,
 }
 impl Default for CanvasDescriptor {
     fn default() -> Self {
         Self {
             size: Size { height: 100, width: 100 },
             face_color: Color::WHITE,
-            graphics_type: GraphicsType::Bitmap,
+            graphics_type: ImageFormat::Bitmap,
         }
     }
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum GraphicsType {
+pub enum ImageFormat {
     /// An image represented as a bitmap or pixel map.
     Bitmap,
-    /// An image represented as a vector image.
-    Vector,
+    /// An image represented as an SVG image.
+    Svg,
 }
 
 /// Describes a shape to be drawn.
@@ -368,7 +368,7 @@ pub trait Canvas {
 pub struct CairoCanvas {
     size: Size,
     context: cairo::Context,
-    graphics_type: GraphicsType,
+    graphics_type: ImageFormat,
     temp_file: Option<path::PathBuf>,
 }
 impl CairoCanvas {
@@ -376,7 +376,7 @@ impl CairoCanvas {
     pub fn from_context(
         context: &cairo::Context,
         size: Size,
-        graphics_type: GraphicsType,
+        graphics_type: ImageFormat,
     ) -> Self {
         Self {
             size,
@@ -391,7 +391,7 @@ impl Canvas for CairoCanvas {
         let mut temp_file = None;
 
         let context = match desc.graphics_type {
-            GraphicsType::Bitmap => {
+            ImageFormat::Bitmap => {
                 let surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     desc.size.width as i32,
@@ -400,7 +400,7 @@ impl Canvas for CairoCanvas {
 
                 cairo::Context::new(&surface).unwrap()
             },
-            GraphicsType::Vector => {
+            ImageFormat::Svg => {
                 let mut temp_filename = std::env::temp_dir();
                 temp_filename.push("plt_temp.svg");
                 temp_file = Some(temp_filename);
@@ -589,7 +589,7 @@ impl Canvas for CairoCanvas {
 
     fn save_file<P: AsRef<path::Path>>(&mut self, desc: SaveFileDescriptor<P>) {
         match self.graphics_type {
-            GraphicsType::Bitmap => {
+            ImageFormat::Bitmap => {
                 match desc.format {
                     FileFormat::Png => {
                         // temporarily remove surface from context
@@ -650,7 +650,7 @@ impl Canvas for CairoCanvas {
                     },
                 }
             },
-            GraphicsType::Vector => {
+            ImageFormat::Svg => {
                 match desc.format {
                     FileFormat::Svg => {
                         // finish writing file
