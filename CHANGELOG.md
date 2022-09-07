@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### plt
+
+- `Subplot` methods for setting axis line visiblility.
+
 ## [0.3.0] - 2022-09-07
 
 ### Added
