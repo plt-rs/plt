@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Jonah Hoffman <jhh451@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/plt-rs/plt"
-description = "Plotting library with a focus on publication level aesthetics and control"
+description = "Plotting library with a focus on publication level aesthetics and ergonomic control."
 keywords = ["plot", "graph", "plotting", "visualization"]
 categories = ["visualization", "graphics"]
 
