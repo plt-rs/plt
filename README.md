@@ -16,25 +16,25 @@ To get started, see the [examples](https://github.com/plt-rs/plt/tree/main/plt/e
 
 ### Example
 ```rust
-   // create data
-   //let xs = ...;
-   //let ys = ...;
+// create data
+//let xs = ...;
+//let ys = ...;
 
-   // create subplot
-   let mut sp = plt::Subplot::builder()
-       .xlabel("x data")
-       .ylabel("y data")
-       .build();
+// create subplot
+let mut sp = plt::Subplot::builder()
+    .xlabel("x data")
+    .ylabel("y data")
+    .build();
 
-   // plot data
-   sp.plot(plt::PlotData::new(&xs, &ys)).unwrap();
+// plot data
+sp.plot(plt::PlotData::new(&xs, &ys)).unwrap();
 
-   // make figure and add subplot
-   let mut fig = <plt::Figure>::default();
-   fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
+// make figure and add subplot
+let mut fig = <plt::Figure>::default();
+fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
 
-   // save figure to file
-   fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
+// save figure to file
+fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
 ```
 
 ## Dependencies
