@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### plt
 
-- `Subplot` methods for setting axis line visiblility.
+- `SubplotBuilder` methods for setting axis line visiblility.
+- `SubplotBuilder` methods for setting grid lines.
 
 ## [0.3.0] - 2022-09-07
 

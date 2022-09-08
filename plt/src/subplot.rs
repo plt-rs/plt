@@ -122,6 +122,11 @@ impl<'a> SubplotBuilder<'a> {
         self.desc.xaxis.limits = limits;
         self
     }
+    /// Sets the grid settings for the default x-axis.
+    pub fn xgrid(mut self, grid: Grid) -> Self {
+        self.desc.xaxis.grid = grid;
+        self
+    }
     /// Sets the major tick mark locations of the default x-axis.
     pub fn xmajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
         self.desc.xaxis.major_tick_marks = spacing;
@@ -156,6 +161,11 @@ impl<'a> SubplotBuilder<'a> {
     /// Sets the limits of the default y-axis.
     pub fn ylimits(mut self, limits: Limits) -> Self {
         self.desc.yaxis.limits = limits;
+        self
+    }
+    /// Sets the grid settings for the default y-axis.
+    pub fn ygrid(mut self, grid: Grid) -> Self {
+        self.desc.yaxis.grid = grid;
         self
     }
     /// Sets the major tick mark locations of the default y-axis.
@@ -194,6 +204,11 @@ impl<'a> SubplotBuilder<'a> {
         self.desc.secondary_xaxis.limits = limits;
         self
     }
+    /// Sets the grid settings for the secondary x-axis.
+    pub fn secondary_xgrid(mut self, grid: Grid) -> Self {
+        self.desc.secondary_xaxis.grid = grid;
+        self
+    }
     /// Sets the major tick mark locations of the secondary x-axis.
     pub fn secondary_xmajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
         self.desc.secondary_xaxis.major_tick_marks = spacing;
@@ -228,6 +243,11 @@ impl<'a> SubplotBuilder<'a> {
     /// Sets the limits of the secondary y-axis.
     pub fn secondary_ylimits(mut self, limits: Limits) -> Self {
         self.desc.secondary_yaxis.limits = limits;
+        self
+    }
+    /// Sets the grid settings for the secondary y-axis.
+    pub fn secondary_ygrid(mut self, grid: Grid) -> Self {
+        self.desc.secondary_yaxis.grid = grid;
         self
     }
     /// Sets the major tick mark locations of the secondary y-axis.
