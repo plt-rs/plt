@@ -870,13 +870,13 @@ pub(crate) struct SubplotDescriptor<'a> {
     /// The title displayed at the top of this subplot.
     pub title: &'a str,
     /// The default axis corresponding to x-values.
-    pub xaxis: Axis<&'a str>,
+    pub xaxis: AxisDescriptor<&'a str>,
     /// The default axis corresponding to y-values.
-    pub yaxis: Axis<&'a str>,
+    pub yaxis: AxisDescriptor<&'a str>,
     /// The secondary axis corresponding to x-values.
-    pub secondary_xaxis: Axis<&'a str>,
+    pub secondary_xaxis: AxisDescriptor<&'a str>,
     /// The secondary axis corresponding to y-values.
-    pub secondary_yaxis: Axis<&'a str>,
+    pub secondary_yaxis: AxisDescriptor<&'a str>,
 }
 impl SubplotDescriptor<'_> {
     /// Constructor for describing a subplot with a high level of detail.
@@ -884,7 +884,7 @@ impl SubplotDescriptor<'_> {
         Self {
             format: SubplotFormat::default(),
             title: "",
-            xaxis: Axis {
+            xaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
@@ -894,7 +894,7 @@ impl SubplotDescriptor<'_> {
                 limits: Limits::Auto,
                 visible: true,
             },
-            yaxis: Axis {
+            yaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
@@ -904,7 +904,7 @@ impl SubplotDescriptor<'_> {
                 limits: Limits::Auto,
                 visible: true,
             },
-            secondary_xaxis: Axis {
+            secondary_xaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
@@ -914,7 +914,7 @@ impl SubplotDescriptor<'_> {
                 limits: Limits::Auto,
                 visible: true,
             },
-            secondary_yaxis: Axis {
+            secondary_yaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
@@ -932,7 +932,7 @@ impl Default for SubplotDescriptor<'_> {
         Self {
             format: SubplotFormat::default(),
             title: "",
-            xaxis: Axis {
+            xaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::Auto,
                 major_tick_labels: TickLabels::Auto,
@@ -942,7 +942,7 @@ impl Default for SubplotDescriptor<'_> {
                 limits: Limits::Auto,
                 visible: true,
             },
-            yaxis: Axis {
+            yaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::Auto,
                 major_tick_labels: TickLabels::Auto,
@@ -952,7 +952,7 @@ impl Default for SubplotDescriptor<'_> {
                 limits: Limits::Auto,
                 visible: true,
             },
-            secondary_xaxis: Axis {
+            secondary_xaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::Auto,
                 major_tick_labels: TickLabels::Auto,
@@ -962,7 +962,7 @@ impl Default for SubplotDescriptor<'_> {
                 limits: Limits::Auto,
                 visible: true,
             },
-            secondary_yaxis: Axis {
+            secondary_yaxis: AxisDescriptor {
                 label: "",
                 major_tick_marks: TickSpacing::Auto,
                 major_tick_labels: TickLabels::Auto,
@@ -1013,7 +1013,7 @@ impl<D: SeriesData + Clone + Default> Default for PlotDescriptor<D> {
 
 /// Configuration for an axis.
 #[derive(Clone, Debug)]
-pub(crate) struct Axis<S: AsRef<str>> {
+pub(crate) struct AxisDescriptor<S: AsRef<str>> {
     /// The label desplayed by the axis.
     pub label: S,
     /// Determines the major tick mark locations on this axis.
@@ -1050,8 +1050,8 @@ impl AxisType {
     }
 }
 
-pub(crate) type AxisBuf = Axis<String>;
-impl<S: AsRef<str>> Axis<S> {
+pub(crate) type AxisBuf = AxisDescriptor<String>;
+impl<S: AsRef<str>> AxisDescriptor<S> {
     fn to_buf(&self) -> AxisBuf {
         AxisBuf {
             label: self.label.as_ref().to_string(),
