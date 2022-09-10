@@ -12,8 +12,10 @@
 //! ### Example
 //! ```rust
 //!// create data
-//!//let xs = ...;
-//!//let ys = ...;
+//!let xs = ndarray::Array1::linspace(0.0, 10.0, 40);
+//!let ys = xs.iter()
+//!    .map(|x: &f64| x.powi(3))
+//!    .collect::<ndarray::Array1<_>>();
 //!
 //!// create subplot
 //!let mut sp = plt::Subplot::builder()
