@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### plt
+
+- Round data points to the nearest dot (pixel).
+
 ## [0.3.1] - 2022-09-09
 
 ### Added
