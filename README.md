@@ -1,5 +1,6 @@
 # plt
 
+[![CI](https://github.com/plt-rs/plt/actions/workflows/ci.yml/badge.svg)](https://github.com/plt-rs/plt/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/plt)](https://crates.io/crates/plt)
 [![docs.rs](https://img.shields.io/docsrs/plt)](https://docs.rs/plt)
 
