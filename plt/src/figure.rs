@@ -904,7 +904,8 @@ fn draw_subplot<B: Backend>(
                         let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
                         let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
 
-                        plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac })
+                        let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
+                        draw::Point { x: point.x.round(), y: point.y.round() }
                     })
                     .collect::<Vec<_>>(),
                 line_color,
@@ -960,7 +961,8 @@ fn draw_subplot<B: Backend>(
                 let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
                 let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
 
-                plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac })
+                let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
+                draw::Point { x: point.x.round(), y: point.y.round() }
             }) {
                 canvas.draw_shape(draw::ShapeDescriptor {
                     point,
