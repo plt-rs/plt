@@ -373,11 +373,7 @@ pub struct CairoCanvas {
 }
 impl CairoCanvas {
     /// Construct from existing context.
-    pub fn from_context(
-        context: &cairo::Context,
-        size: Size,
-        graphics_type: ImageFormat,
-    ) -> Self {
+    pub fn from_context(context: &cairo::Context, size: Size, graphics_type: ImageFormat) -> Self {
         Self {
             size,
             context: context.clone(),
@@ -396,7 +392,8 @@ impl Canvas for CairoCanvas {
                     cairo::Format::ARgb32,
                     desc.size.width as i32,
                     desc.size.height as i32,
-                ).unwrap();
+                )
+                .unwrap();
 
                 cairo::Context::new(&surface).unwrap()
             },
@@ -409,13 +406,19 @@ impl Canvas for CairoCanvas {
                     desc.size.width.into(),
                     desc.size.height.into(),
                     temp_file.as_ref(),
-                ).unwrap();
+                )
+                .unwrap();
 
                 cairo::Context::new(&surface).unwrap()
             },
         };
 
-        context.set_source_rgba(desc.face_color.r, desc.face_color.g, desc.face_color.b, desc.face_color.a);
+        context.set_source_rgba(
+            desc.face_color.r,
+            desc.face_color.g,
+            desc.face_color.b,
+            desc.face_color.a,
+        );
 
         context.paint().unwrap();
 
@@ -439,33 +442,50 @@ impl Canvas for CairoCanvas {
         match desc.shape {
             Shape::Rectangle { h, w } => {
                 self.context.rectangle(
-                    origin.x - (w as f64) / 2.0, origin.y - (h as f64) / 2.0,
-                    w as f64, h as f64,
+                    origin.x - (w as f64) / 2.0,
+                    origin.y - (h as f64) / 2.0,
+                    w as f64,
+                    h as f64,
                 );
             },
             Shape::Square { l } => {
                 self.context.rectangle(
-                    origin.x - (l as f64) / 2.0, origin.y - (l as f64) / 2.0,
-                    l as f64, l as f64,
+                    origin.x - (l as f64) / 2.0,
+                    origin.y - (l as f64) / 2.0,
+                    l as f64,
+                    l as f64,
                 );
                 self.context.close_path();
             },
             Shape::Circle { r } => {
                 self.context.arc(
-                    origin.x, origin.y,
-                    r as f64, 0.0, 2.0*std::f64::consts::PI,
+                    origin.x,
+                    origin.y,
+                    r as f64,
+                    0.0,
+                    2.0 * std::f64::consts::PI,
                 );
             },
         };
 
         // fill shape
-        self.context.set_source_rgba(desc.fill_color.r, desc.fill_color.g, desc.fill_color.b, desc.fill_color.a);
+        self.context.set_source_rgba(
+            desc.fill_color.r,
+            desc.fill_color.g,
+            desc.fill_color.b,
+            desc.fill_color.a,
+        );
         self.context.fill_preserve().unwrap();
 
         // outline shape
         self.context.set_dash(desc.line_dashes, 0.0);
         self.context.set_line_width(desc.line_width as f64);
-        self.context.set_source_rgba(desc.line_color.r, desc.line_color.g, desc.line_color.b, desc.line_color.a);
+        self.context.set_source_rgba(
+            desc.line_color.r,
+            desc.line_color.g,
+            desc.line_color.b,
+            desc.line_color.a,
+        );
         self.context.stroke().unwrap();
 
         self.reset_clip();
@@ -483,15 +503,20 @@ impl Canvas for CairoCanvas {
             self.clip_area(area);
         }
 
-        self.context.set_source_rgba(desc.line_color.r, desc.line_color.g, desc.line_color.b, desc.line_color.a);
+        self.context.set_source_rgba(
+            desc.line_color.r,
+            desc.line_color.g,
+            desc.line_color.b,
+            desc.line_color.a,
+        );
         self.context.set_line_width(desc.line_width as f64);
 
         self.context.set_dash(desc.dashes, 0.0);
 
         let offset = if desc.line_width % 2 == 0 { 0.0 } else { 0.5 };
 
-        self.context.line_to(p1.x+offset, p1.y-offset);
-        self.context.line_to(p2.x+offset, p2.y-offset);
+        self.context.line_to(p1.x + offset, p1.y - offset);
+        self.context.line_to(p2.x + offset, p2.y - offset);
 
         self.context.stroke().unwrap();
 
@@ -507,7 +532,12 @@ impl Canvas for CairoCanvas {
             self.clip_area(area);
         }
 
-        self.context.set_source_rgba(desc.line_color.r, desc.line_color.g, desc.line_color.b, desc.line_color.a);
+        self.context.set_source_rgba(
+            desc.line_color.r,
+            desc.line_color.g,
+            desc.line_color.b,
+            desc.line_color.a,
+        );
         self.context.set_line_width(desc.line_width as f64);
         self.context.set_line_join(cairo::LineJoin::Round);
 
@@ -518,7 +548,7 @@ impl Canvas for CairoCanvas {
         for point in desc.points {
             let point = CairoPoint::from_point(point, self.size);
 
-            self.context.line_to(point.x+offset, point.y-offset);
+            self.context.line_to(point.x + offset, point.y - offset);
         }
 
         self.context.stroke().unwrap();
@@ -537,7 +567,12 @@ impl Canvas for CairoCanvas {
             self.clip_area(area);
         }
 
-        self.context.set_source_rgba(desc.color.r, desc.color.g, desc.color.b, desc.color.a);
+        self.context.set_source_rgba(
+            desc.color.r,
+            desc.color.g,
+            desc.color.b,
+            desc.color.a,
+        );
 
         self.context.select_font_face(
             font_to_cairo(desc.font.name),
@@ -566,7 +601,12 @@ impl Canvas for CairoCanvas {
     fn text_size(&mut self, desc: TextDescriptor) -> Size {
         self.context.save().unwrap();
 
-        self.context.set_source_rgba(desc.color.r, desc.color.g, desc.color.b, desc.color.a);
+        self.context.set_source_rgba(
+            desc.color.r,
+            desc.color.g,
+            desc.color.b,
+            desc.color.a,
+        );
 
         self.context.select_font_face(
             font_to_cairo(desc.font.name),
@@ -593,12 +633,16 @@ impl Canvas for CairoCanvas {
                 match desc.format {
                     FileFormat::Png => {
                         // temporarily remove surface from context
-                        let mut surface = cairo::ImageSurface::try_from(self.context.target()).unwrap();
+                        let mut surface = cairo::ImageSurface::try_from(
+                            self.context.target()
+                        )
+                        .unwrap();
                         let blank_surface = cairo::ImageSurface::create(
                             cairo::Format::ARgb32,
                             0,
                             0,
-                        ).unwrap();
+                        )
+                        .unwrap();
                         self.context = cairo::Context::new(&blank_surface).unwrap();
 
                         let file = fs::File::create(desc.filename).unwrap();
@@ -618,13 +662,11 @@ impl Canvas for CairoCanvas {
                         let buffer_raw = surface.data().unwrap();
                         // fix color byte ordering
                         let buffer = buffer_raw.chunks(4)
-                            .flat_map(|rgba| {
-                                [rgba[2], rgba[1], rgba[0], rgba[3]]
-                            })
+                            .flat_map(|rgba| [rgba[2], rgba[1], rgba[0], rgba[3]])
                             .collect::<Vec<_>>();
 
                         // set dpi
-                        let ppu = (desc.dpi as f64 * (1000.0/25.4)) as u32;
+                        let ppu = (desc.dpi as f64 * (1000.0 / 25.4)) as u32;
                         let xppu = ppu.to_be_bytes();
                         let yppu = ppu.to_be_bytes();
                         let unit = png::Unit::Meter;
@@ -635,7 +677,8 @@ impl Canvas for CairoCanvas {
                                 yppu[0], yppu[1], yppu[2], yppu[3],
                                 unit as u8,
                             ],
-                        ).unwrap();
+                        )
+                        .unwrap();
 
                         writer.write_image_data(&buffer[..]).unwrap();
 
@@ -656,7 +699,8 @@ impl Canvas for CairoCanvas {
                         // finish writing file
                         let old_surface = cairo::SvgSurface::try_from(
                             self.context.target()
-                        ).unwrap();
+                        )
+                        .unwrap();
                         old_surface.finish();
 
                         if let Some(temp_file) = &self.temp_file {
@@ -741,121 +785,85 @@ fn align_text(
     extents: cairo::TextExtents,
     alignment: Alignment,
 ) -> CairoPoint {
-        let (x, y) = match alignment {
-            Alignment::Center => {
-                (
-                    position.x
-                    - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
-                    + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
-                    position.y
-                    - (extents.y_bearing + extents.height / 2.0)*rotation.cos()
-                    - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
-                )
-            },
-            Alignment::Right => {
-                (
-                    position.x
-                    - extents.x_bearing*rotation.cos()
-                    - extents.width*rotation.cos().clamp(0.0, 1.0)
-                    + extents.y_bearing*rotation.sin().clamp(0.0, 1.0),
-                    position.y
-                    - (extents.y_bearing + (extents.height / 2.0))*rotation.cos()
-                    - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
-                )
-            },
-            Alignment::Left => {
-                (
-                    position.x
-                    - extents.x_bearing*rotation.cos()
-                    - extents.width*rotation.cos().clamp(-1.0, 0.0)
-                    + extents.y_bearing*rotation.sin()
-                    + extents.height*rotation.sin().clamp(0.0, 1.0),
-                    position.y
-                    - (extents.y_bearing + extents.height / 2.0)*rotation.cos()
-                    - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
-                )
-            },
-            Alignment::Top => {
-                (
-                    position.x
-                    - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
-                    + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
-                    position.y
-                    - extents.y_bearing*rotation.cos()
-                    - extents.x_bearing*rotation.sin()
-                    - extents.width*rotation.sin().clamp(-1.0, 0.0)
-                    - extents.height*rotation.cos().clamp(-1.0, 0.0),
-                )
-            },
-            Alignment::Bottom => {
-                (
-                    position.x
-                    - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
-                    + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
-                    position.y
-                    - extents.y_bearing*rotation.cos()
-                    - extents.height*rotation.cos().clamp(0.0, 1.0)
-                    - extents.x_bearing*rotation.sin()
-                    - extents.width*rotation.sin().clamp(0.0, 1.0),
-                )
-            },
-            Alignment::TopRight => {
-                (
-                    position.x
-                    - extents.x_bearing*rotation.cos()
-                    - extents.width*rotation.cos().clamp(0.0, 1.0)
-                    + extents.y_bearing*rotation.sin()
-                    + extents.height*rotation.sin().clamp(-1.0, 0.0),
-                    position.y
-                    - extents.y_bearing*rotation.cos()
-                    - extents.height*rotation.cos().clamp(-1.0, 0.0)
-                    - extents.x_bearing*rotation.sin()
-                    - extents.width*rotation.sin().clamp(-1.0, 0.0),
-                )
-            },
-            Alignment::TopLeft => {
-                (
-                    position.x
-                    - extents.x_bearing*rotation.cos()
-                    - extents.width*rotation.cos().clamp(-1.0, 0.0)
-                    + extents.y_bearing*rotation.sin()
-                    + extents.height*rotation.sin().clamp(0.0, 1.0),
-                    position.y
-                    - extents.y_bearing*rotation.cos()
-                    - extents.height*rotation.cos().clamp(-1.0, 0.0)
-                    + extents.x_bearing*rotation.sin()
-                    - extents.width*rotation.sin().clamp(-1.0, 0.0),
-                )
-            },
-            Alignment::BottomRight => {
-                (
-                    position.x
-                    - extents.x_bearing*rotation.cos()
-                    - extents.width*rotation.cos().clamp(0.0, 1.0)
-                    + extents.y_bearing*rotation.sin()
-                    + extents.height*rotation.sin().clamp(-1.0, 0.0),
-                    position.y
-                    - extents.y_bearing*rotation.cos()
-                    - extents.height*rotation.cos().clamp(0.0, 1.0)
-                    + extents.x_bearing*rotation.sin()
-                    - extents.width*rotation.sin().clamp(0.0, 1.0),
-                )
-            },
-            Alignment::BottomLeft => {
-                (
-                    position.x
-                    - extents.x_bearing*rotation.cos()
-                    - extents.width*rotation.cos().clamp(-1.0, 0.0)
-                    + extents.y_bearing*rotation.sin()
-                    + extents.height*rotation.sin().clamp(0.0, 1.0),
-                    position.y
-                    - extents.y_bearing*rotation.cos()
-                    - extents.height*rotation.cos().clamp(0.0, 1.0)
-                    + extents.x_bearing*rotation.sin()
-                    - extents.width*rotation.sin().clamp(0.0, 1.0),
-                )
-            },
-        };
+    let (x, y) = match alignment {
+        Alignment::Center => (
+            position.x - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
+                + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
+            position.y - (extents.y_bearing + extents.height / 2.0)*rotation.cos()
+                - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
+        ),
+        Alignment::Right => (
+            position.x - extents.x_bearing*rotation.cos()
+                - extents.width*rotation.cos().clamp(0.0, 1.0)
+                + extents.y_bearing*rotation.sin().clamp(0.0, 1.0),
+            position.y - (extents.y_bearing + (extents.height / 2.0))*rotation.cos()
+                - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
+        ),
+        Alignment::Left => (
+            position.x - extents.x_bearing*rotation.cos()
+                - extents.width*rotation.cos().clamp(-1.0, 0.0)
+                + extents.y_bearing*rotation.sin()
+                + extents.height*rotation.sin().clamp(0.0, 1.0),
+            position.y - (extents.y_bearing + extents.height / 2.0)*rotation.cos()
+                - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
+        ),
+        Alignment::Top => (
+            position.x - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
+                + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
+            position.y - extents.y_bearing*rotation.cos()
+                - extents.x_bearing*rotation.sin()
+                - extents.width*rotation.sin().clamp(-1.0, 0.0)
+                - extents.height*rotation.cos().clamp(-1.0, 0.0),
+        ),
+        Alignment::Bottom => (
+            position.x - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
+                + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
+            position.y - extents.y_bearing*rotation.cos()
+                - extents.height*rotation.cos().clamp(0.0, 1.0)
+                - extents.x_bearing*rotation.sin()
+                - extents.width*rotation.sin().clamp(0.0, 1.0),
+        ),
+        Alignment::TopRight => (
+            position.x - extents.x_bearing*rotation.cos()
+                - extents.width*rotation.cos().clamp(0.0, 1.0)
+                + extents.y_bearing*rotation.sin()
+                + extents.height*rotation.sin().clamp(-1.0, 0.0),
+            position.y - extents.y_bearing*rotation.cos()
+                - extents.height*rotation.cos().clamp(-1.0, 0.0)
+                - extents.x_bearing*rotation.sin()
+                - extents.width*rotation.sin().clamp(-1.0, 0.0),
+        ),
+        Alignment::TopLeft => (
+            position.x - extents.x_bearing*rotation.cos()
+                - extents.width*rotation.cos().clamp(-1.0, 0.0)
+                + extents.y_bearing*rotation.sin()
+                + extents.height*rotation.sin().clamp(0.0, 1.0),
+            position.y - extents.y_bearing*rotation.cos()
+                - extents.height*rotation.cos().clamp(-1.0, 0.0)
+                + extents.x_bearing*rotation.sin()
+                - extents.width*rotation.sin().clamp(-1.0, 0.0),
+        ),
+        Alignment::BottomRight => (
+            position.x - extents.x_bearing*rotation.cos()
+                - extents.width*rotation.cos().clamp(0.0, 1.0)
+                + extents.y_bearing*rotation.sin()
+                + extents.height*rotation.sin().clamp(-1.0, 0.0),
+            position.y - extents.y_bearing*rotation.cos()
+                - extents.height*rotation.cos().clamp(0.0, 1.0)
+                + extents.x_bearing*rotation.sin()
+                - extents.width*rotation.sin().clamp(0.0, 1.0),
+        ),
+        Alignment::BottomLeft => (
+            position.x - extents.x_bearing*rotation.cos()
+                - extents.width*rotation.cos().clamp(-1.0, 0.0)
+                + extents.y_bearing*rotation.sin()
+                + extents.height*rotation.sin().clamp(0.0, 1.0),
+            position.y - extents.y_bearing*rotation.cos()
+                - extents.height*rotation.cos().clamp(0.0, 1.0)
+                + extents.x_bearing*rotation.sin()
+                - extents.width*rotation.sin().clamp(0.0, 1.0),
+        ),
+    };
 
-        CairoPoint { x, y }
+    CairoPoint { x, y }
 }

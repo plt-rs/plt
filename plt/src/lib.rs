@@ -45,16 +45,16 @@
 //! `pacman -Syu cairo`
 
 mod figure;
-mod subplot;
 mod layout;
+mod subplot;
 
 // bring pub elements from submodules into main lib module
 pub use figure::*;
-pub use subplot::*;
 pub use layout::*;
+pub use subplot::*;
 
 // re-export necessary elements from plt-draw
-pub use draw::{Canvas as Backend, CairoCanvas as CairoBackend, Color, FontName, FileFormat};
+pub use draw::{CairoCanvas as CairoBackend, Canvas as Backend, Color, FileFormat, FontName};
 
 /// The error type for this library.
 #[derive(thiserror::Error, Debug)]

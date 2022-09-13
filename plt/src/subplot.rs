@@ -1,4 +1,4 @@
-use crate::{PltError, Color, FontName};
+use crate::{Color, FontName, PltError};
 
 use std::{f64, iter};
 
@@ -34,10 +34,7 @@ impl<'a> Subplot<'a> {
 
     /// Plots X, Y data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().plot()` on a [`Subplot`].
-    pub fn plot<D: SeriesData + Clone + Default + 'a>(
-        &mut self,
-        data: D,
-    ) -> Result<(), PltError> {
+    pub fn plot<D: SeriesData + Clone + Default + 'a>(&mut self, data: D) -> Result<(), PltError> {
         let plotter = Plotter {
             subplot: self,
             desc: PlotDescriptor::default(),
@@ -77,16 +74,14 @@ impl<'a> Subplot<'a> {
             None
         };
 
-        self.plot_infos.push(
-            PlotInfo {
-                label: desc.label.to_string(),
-                data: Box::new(desc.data),
-                line,
-                marker,
-                xaxis: desc.xaxis,
-                yaxis: desc.yaxis,
-            }
-        );
+        self.plot_infos.push(PlotInfo {
+            label: desc.label.to_string(),
+            data: Box::new(desc.data),
+            line,
+            marker,
+            xaxis: desc.xaxis,
+            yaxis: desc.yaxis,
+        });
     }
 }
 
@@ -429,15 +424,12 @@ impl<'a, 'b, D: SeriesData + Clone + 'a> Plotter<'a, 'b, D> {
     /// Sets the data to be plotted and consumes the plotter.
     pub fn plot(self, data: D) -> Result<(), PltError> {
         if !data.is_correctly_sized() {
-            return Err(PltError::InvalidData("Data is not correctly sized".to_owned()))
+            return Err(PltError::InvalidData("Data is not correctly sized".to_owned()));
         } else if data.data().any(|(x, y)| x.is_nan() || y.is_nan()) {
-            return Err(PltError::InvalidData("Data has NaN value".to_owned()))
+            return Err(PltError::InvalidData("Data has NaN value".to_owned()));
         }
 
-        self.subplot.plot_desc(PlotDescriptor {
-            data,
-            ..self.desc
-        });
+        self.subplot.plot_desc(PlotDescriptor { data, ..self.desc });
 
         Ok(())
     }
@@ -567,9 +559,10 @@ impl Default for PlotData<'_> {
 }
 impl SeriesData for PlotData<'_> {
     fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
-        Box::new(
-            iter::zip(self.xdata.iter().cloned(), self.ydata.iter().cloned())
-        )
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.ydata.iter().cloned(),
+        ))
     }
 
     fn is_correctly_sized(&self) -> bool {
@@ -591,17 +584,14 @@ impl SeriesData for PlotData<'_> {
 }
 impl<'a> PlotData<'a> {
     /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new<
-        Xs: Into<ndarray::ArrayView1<'a, f64>>,
-        Ys: Into<ndarray::ArrayView1<'a, f64>>,
-    >(xs: Xs, ys: Ys) -> Self {
+    pub fn new<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        xs: Xs,
+        ys: Ys,
+    ) -> Self {
         let xdata = xs.into();
         let ydata = ys.into();
 
-        Self {
-            xdata,
-            ydata,
-        }
+        Self { xdata, ydata }
     }
 }
 
@@ -621,9 +611,10 @@ impl Default for PlotDataOwned {
 }
 impl SeriesData for PlotDataOwned {
     fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
-        Box::new(
-            iter::zip(self.xdata.iter().cloned(), self.ydata.iter().cloned())
-        )
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.ydata.iter().cloned(),
+        ))
     }
 
     fn is_correctly_sized(&self) -> bool {
@@ -645,17 +636,14 @@ impl SeriesData for PlotDataOwned {
 }
 impl PlotDataOwned {
     /// Main constructor, taking separate arrays of x-values and y-values.
-    pub fn new<
-        Xs: Into<ndarray::Array1<f64>>,
-        Ys: Into<ndarray::Array1<f64>>,
-    >(xs: Xs, ys: Ys) -> Self {
+    pub fn new<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        xs: Xs,
+        ys: Ys,
+    ) -> Self {
         let xdata = xs.into();
         let ydata = ys.into();
 
-        Self {
-            xdata,
-            ydata,
-        }
+        Self { xdata, ydata }
     }
 }
 
@@ -701,17 +689,14 @@ impl SeriesData for StepData<'_> {
 impl<'a> StepData<'a> {
     /// Main constructor, taking separate array views of steps and y-values.
     /// There should be one more step edge than y-values.
-    pub fn new<
-        Es: Into<ndarray::ArrayView1<'a, f64>>,
-        Ys: Into<ndarray::ArrayView1<'a, f64>>,
-    >(edges: Es, ys: Ys) -> Self {
+    pub fn new<Es: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        edges: Es,
+        ys: Ys,
+    ) -> Self {
         let edges = edges.into();
         let ydata = ys.into();
 
-        Self {
-            edges,
-            ydata,
-        }
+        Self { edges, ydata }
     }
 }
 
@@ -757,17 +742,14 @@ impl SeriesData for StepDataOwned {
 impl StepDataOwned {
     /// Main constructor, taking separate arrays of step edges and y-values.
     /// There should be one more step edge than y-values.
-    pub fn new<
-        Es: Into<ndarray::Array1<f64>>,
-        Ys: Into<ndarray::Array1<f64>>,
-    >(edges: Es, ys: Ys) -> Self {
+    pub fn new<Es: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        edges: Es,
+        ys: Ys,
+    ) -> Self {
         let edges = edges.into();
         let ydata = ys.into();
 
-        Self {
-            edges,
-            ydata,
-        }
+        Self { edges, ydata }
     }
 }
 
@@ -1041,12 +1023,7 @@ pub(crate) enum AxisType {
 }
 impl AxisType {
     pub(crate) fn iter() -> std::array::IntoIter<Self, 4> {
-        [
-            Self::X,
-            Self::Y,
-            Self::SecondaryX,
-            Self::SecondaryY,
-        ].into_iter()
+        [Self::X, Self::Y, Self::SecondaryX, Self::SecondaryY].into_iter()
     }
 }
 

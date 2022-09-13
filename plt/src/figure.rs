@@ -1,12 +1,12 @@
-use crate::{PltError, FileFormat, Color, Backend, CairoBackend};
+use crate::layout::{FractionalArea, Layout};
 use crate::subplot::{
-    Subplot, TickDirection, TickSpacing, TickLabels, Grid, Limits, LineStyle,
-    AxisType, Line, MarkerStyle,
+    AxisType, Grid, Limits, Line, LineStyle, MarkerStyle, Subplot, TickDirection, TickLabels,
+    TickSpacing,
 };
-use crate::layout::{Layout, FractionalArea};
+use crate::{Backend, CairoBackend, Color, FileFormat, PltError};
 
-use std::{iter, ops, path};
 use std::collections::HashMap;
+use std::{iter, ops, path};
 
 /// Represents a whole figure, containing subplots, which can be drawn as an image.
 #[derive(Debug)]
@@ -41,18 +41,15 @@ impl<'a, B: Backend> Figure<'a, B> {
     }
 
     /// Adds subplots to the figure through a [`Layout`].
-    pub fn set_layout<'b, L: Layout<'a>>(
-        &'b mut self,
-        layout: L,
-    ) -> Result<(), PltError> {
-        let (mut subplots, frac_areas): (Vec<Subplot>, Vec<FractionalArea>) = layout.subplots().into_iter().unzip();
+    pub fn set_layout<'b, L: Layout<'a>>(&'b mut self, layout: L) -> Result<(), PltError> {
+        let (mut subplots, frac_areas): (Vec<Subplot>, Vec<FractionalArea>) = layout.subplots()
+            .into_iter()
+            .unzip();
 
         if let Some(area) = frac_areas.iter().find(|area| !area.valid()) {
-            return Err(PltError::InvalidSubplotArea(*area))
+            return Err(PltError::InvalidSubplotArea(*area));
         }
-        let mut subplot_areas = frac_areas.iter()
-            .map(|fa| fa.to_area(self.size))
-            .collect();
+        let mut subplot_areas = frac_areas.iter().map(|fa| fa.to_area(self.size)).collect();
 
         self.subplots.append(&mut subplots);
         self.subplot_areas.append(&mut subplot_areas);
@@ -61,9 +58,7 @@ impl<'a, B: Backend> Figure<'a, B> {
     }
 
     /// Draw figure to provided backend.
-    pub fn draw_to_backend(
-        &mut self, backend: &mut B,
-    ) -> Result<(), PltError> {
+    pub fn draw_to_backend(&mut self, backend: &mut B) -> Result<(), PltError> {
         let old_size = self.size;
         self.size = backend.size();
 
@@ -78,7 +73,9 @@ impl<'a, B: Backend> Figure<'a, B> {
 
     /// Draw figure to a file.
     pub fn draw_file<P: AsRef<path::Path>>(
-        &self, format: FileFormat, filename: P,
+        &self,
+        format: FileFormat,
+        filename: P,
     ) -> Result<(), PltError> {
         // create canvas to draw to
         let graphics_type = match format {
@@ -106,9 +103,10 @@ impl<'a, B: Backend> Figure<'a, B> {
     }
 
     /// Get reference to held subplots.
-    pub fn subplots<'b>(
-        &'b mut self
-    ) -> &mut Vec<Subplot<'a>> where 'a: 'b {
+    pub fn subplots<'b>(&'b mut self) -> &mut Vec<Subplot<'a>>
+    where
+        'a: 'b,
+    {
         &mut self.subplots
     }
 }
@@ -180,7 +178,7 @@ struct AxisFinalized {
 
 fn sigdigit(mut num: f64) -> i32 {
     if num == 0.0 {
-        return i32::MIN
+        return i32::MIN;
     }
 
     if num > 1.0 {
@@ -260,16 +258,18 @@ fn tick_modifiers(ticks: &[f64]) -> Result<(f64, i32, usize), PltError> {
     // get differences between ticks
     let difs = ticks
         .windows(2)
-        .map(|window| {
-            window[1] - window[0]
-        })
+        .map(|window| window[1] - window[0])
         .collect::<Vec<_>>();
     // find the largest difference between any two consecutive ticks
     let max_dif = *difs.iter()
-        .reduce(|max, dif| if dif > max {dif} else {max})
+        .reduce(|max, dif| if dif > max { dif } else { max })
         .unwrap();
     // find the highest most significant digit of the max tick difference
-    let dif_multiplier = if max_dif != 0.0 { sigdigit(max_dif) } else { max_multiplier };
+    let dif_multiplier = if max_dif != 0.0 {
+        sigdigit(max_dif)
+    } else {
+        max_multiplier
+    };
 
     // if multiplier of max dif is less than max_multiplier - 3, use offset
     let offset = if dif_multiplier < max_multiplier - 3 {
@@ -279,7 +279,10 @@ fn tick_modifiers(ticks: &[f64]) -> Result<(f64, i32, usize), PltError> {
     };
 
     // get true multiplier
-    max_multiplier = sigdigit(round_to(*ticks.last().unwrap() - offset, 3 - dif_multiplier));
+    max_multiplier = sigdigit(round_to(
+        *ticks.last().unwrap() - offset,
+        3 - dif_multiplier,
+    ));
     let multiplier = if !(-2..=3).contains(&max_multiplier) {
         max_multiplier
     } else {
@@ -306,12 +309,8 @@ fn tick_modifiers(ticks: &[f64]) -> Result<(f64, i32, usize), PltError> {
         .map(|&tick| {
             decimals(tick, max_precision as u8)
                 .iter()
-                .rposition(|&digit| {
-                    digit != 0
-                })
-                .map(|prec| {
-                    prec + 1
-                })
+                .rposition(|&digit| digit != 0)
+                .map(|prec| prec + 1)
                 .unwrap_or(0)
         })
         .max()
@@ -354,9 +353,7 @@ fn ticks_to_labels(ticks: &[f64], modifiers: (f64, i32, usize)) -> Result<Vec<St
     };
 
     let labels = shifted_ticks.iter()
-        .map(|tick| {
-            format!("{0:.1$}", tick, precision)
-        })
+        .map(|tick| format!("{0:.1$}", tick, precision))
         .collect::<Vec<_>>();
 
     Ok(labels)
@@ -435,7 +432,7 @@ fn draw_subplot<B: Backend>(
     };
 
     // the pixel buffer sizes for fitting text on the figure sides
-    let buffer_offset = ( (letter_size.height as f64) * 0.6 ) as u32;
+    let buffer_offset = ((letter_size.height as f64) * 0.6) as u32;
     let mut subplot_buffer = HashMap::from([
         (AxisType::Y, 0),
         (AxisType::SecondaryY, 0),
@@ -505,8 +502,8 @@ fn draw_subplot<B: Backend>(
                     let extent = max - min;
 
                     Some((
-                        (min, max), // span
-                        (min - 0.05*extent, max + 0.05*extent), // limits
+                        (min, max),                                 // span
+                        (min - 0.05 * extent, max + 0.05 * extent), // limits
                     ))
                 } else {
                     None
@@ -533,18 +530,18 @@ fn draw_subplot<B: Backend>(
         } else {
             match placement {
                 // use opposite side, if it has a value, otherwise default to (-1.0, 1.0)
-                AxisType::Y => span_limits[&AxisType::SecondaryY].unwrap_or(
-                    ( (-1.0, 1.0), (-1.0, 1.0) )
-                ),
-                AxisType::SecondaryY => span_limits[&AxisType::Y].unwrap_or(
-                    ( (-1.0, 1.0), (-1.0, 1.0) )
-                ),
-                AxisType::X => span_limits[&AxisType::SecondaryX].unwrap_or(
-                    ( (-1.0, 1.0), (-1.0, 1.0) )
-                ),
-                AxisType::SecondaryX => span_limits[&AxisType::X].unwrap_or(
-                    ( (-1.0, 1.0), (-1.0, 1.0) )
-                ),
+                AxisType::Y => {
+                    span_limits[&AxisType::SecondaryY].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
+                },
+                AxisType::SecondaryY => {
+                    span_limits[&AxisType::Y].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
+                },
+                AxisType::X => {
+                    span_limits[&AxisType::SecondaryX].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
+                },
+                AxisType::SecondaryX => {
+                    span_limits[&AxisType::X].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
+                },
             }
         };
 
@@ -552,9 +549,7 @@ fn draw_subplot<B: Backend>(
             .any(|info| info.xaxis == placement || info.yaxis == placement);
 
         // get major tick marks
-        let major_ticks = if let TickSpacing::Manual(
-            ticks
-        ) = &axis.major_tick_marks {
+        let major_ticks = if let TickSpacing::Manual(ticks) = &axis.major_tick_marks {
             ticks.clone()
         } else {
             let nticks = match &axis.major_tick_marks {
@@ -572,15 +567,11 @@ fn draw_subplot<B: Backend>(
             };
 
             (0..nticks)
-                .map(|n| {
-                    span.0 + (span.1 - span.0) * (n as f64 / (nticks - 1) as f64)
-                })
+                .map(|n| span.0 + (span.1 - span.0) * (n as f64 / (nticks - 1) as f64))
                 .collect::<Vec<_>>()
         };
         // get minor tick marks
-        let minor_ticks = if let TickSpacing::Manual(
-            ticks
-        ) = &axis.minor_tick_marks {
+        let minor_ticks = if let TickSpacing::Manual(ticks) = &axis.minor_tick_marks {
             ticks.clone()
         } else {
             let nticks = match &axis.minor_tick_marks {
@@ -598,9 +589,7 @@ fn draw_subplot<B: Backend>(
             };
 
             (0..nticks)
-                .map(|n| {
-                    span.0 + (span.1 - span.0) * (n as f64 / (nticks - 1) as f64)
-                })
+                .map(|n| span.0 + (span.1 - span.0) * (n as f64 / (nticks - 1) as f64))
                 .collect::<Vec<_>>()
         };
         // remove overlap between major and minor ticks
@@ -611,17 +600,13 @@ fn draw_subplot<B: Backend>(
 
         // get major tick labels
         let (major_labels, multiplier, offset) = match &axis.major_tick_labels {
-            TickLabels::Manual(labels) => {
-                (labels.clone(), 0, 0.0)
-            },
+            TickLabels::Manual(labels) => (labels.clone(), 0, 0.0),
             TickLabels::On => {
                 let modifiers = tick_modifiers(major_ticks.as_slice())?;
                 let labels = ticks_to_labels(major_ticks.as_slice(), modifiers)?;
                 (labels, modifiers.1, modifiers.0)
             },
-            TickLabels::None => {
-                (vec![], 0, 0.0)
-            },
+            TickLabels::None => (vec![], 0, 0.0),
             TickLabels::Auto => {
                 if is_primary {
                     let modifiers = tick_modifiers(major_ticks.as_slice())?;
@@ -634,16 +619,12 @@ fn draw_subplot<B: Backend>(
         };
         // get minor tick labels
         let minor_labels = match &axis.minor_tick_labels {
-            TickLabels::Manual(labels) => {
-                labels.clone()
-            },
+            TickLabels::Manual(labels) => labels.clone(),
             TickLabels::On => {
                 let modifiers = tick_modifiers(major_ticks.as_slice())?; // use major modifiers
                 ticks_to_labels(minor_ticks.as_slice(), modifiers)?
             },
-            TickLabels::None => {
-                vec![]
-            },
+            TickLabels::None => vec![],
             TickLabels::Auto => {
                 if is_primary {
                     let modifiers = tick_modifiers(major_ticks.as_slice())?; // use major modifiers
@@ -672,23 +653,15 @@ fn draw_subplot<B: Backend>(
         // add space for tick labels if necessary
         if !major_labels.is_empty() {
             let tick_label_size = match placement {
-                AxisType::Y | AxisType::SecondaryY => {
-                    5 * letter_size.width
-                },
-                AxisType::SecondaryX | AxisType::X => {
-                    letter_size.height
-                },
+                AxisType::Y | AxisType::SecondaryY => 5 * letter_size.width,
+                AxisType::X | AxisType::SecondaryX => letter_size.height,
             };
             *modifier_buffer.get_mut(&placement).unwrap() += tick_label_size;
             *tick_buffer.get_mut(&placement).unwrap() += buffer_offset;
         } else if !minor_labels.is_empty() {
             let tick_label_size = match placement {
-                AxisType::Y | AxisType::SecondaryY => {
-                    5 * letter_size.width
-                },
-                AxisType::SecondaryX | AxisType::X => {
-                    letter_size.height
-                },
+                AxisType::Y | AxisType::SecondaryY => 5 * letter_size.width,
+                AxisType::X | AxisType::SecondaryX => letter_size.height,
             };
             *modifier_buffer.get_mut(&placement).unwrap() += tick_label_size;
             *tick_buffer.get_mut(&placement).unwrap() += buffer_offset;
@@ -717,10 +690,12 @@ fn draw_subplot<B: Backend>(
         }
 
         // adjust total subplot buffer
-        *subplot_buffer.get_mut(&placement).unwrap() = if (
-            tick_buffer[&placement] + tick_label_buffer[&placement]
-            + modifier_buffer[&placement] + label_buffer[&placement]
-        ) < letter_size.width * 2 {
+        *subplot_buffer.get_mut(&placement).unwrap() = if (tick_buffer[&placement]
+            + tick_label_buffer[&placement]
+            + modifier_buffer[&placement]
+            + label_buffer[&placement])
+            < letter_size.width * 2
+        {
             letter_size.width * 3
         } else {
             buffer_offset
@@ -814,13 +789,9 @@ fn draw_subplot<B: Backend>(
             // convert tick numbers to pixel locations
             let tick_locs = ticks.iter()
                 // convert to fraction
-                .map(|tick| {
-                    (tick - axis.limits.0) / (axis.limits.1 - axis.limits.0)
-                })
+                .map(|tick| (tick - axis.limits.0) / (axis.limits.1 - axis.limits.0))
                 // convert to pixel
-                .map(|frac| {
-                    plot_area.fractional_to_point(draw::Point { x: frac, y: frac })
-                })
+                .map(|frac| plot_area.fractional_to_point(draw::Point { x: frac, y: frac }))
                 .collect::<Vec<_>>();
 
             // draw grid lines
@@ -883,8 +854,7 @@ fn draw_subplot<B: Backend>(
                 *default_color.next().unwrap()
             };
             let dashes = match line.style {
-                LineStyle::Solid => vec![
-                ],
+                LineStyle::Solid => vec![],
                 LineStyle::Dashed => vec![
                     (10.0 * scaling).into(),
                     (10.0 * scaling).into(),
@@ -942,8 +912,7 @@ fn draw_subplot<B: Backend>(
                 fill_color
             };
             let line_dashes = match line.style {
-                LineStyle::Solid => vec![
-                ],
+                LineStyle::Solid => vec![],
                 LineStyle::Dashed => vec![
                     (10.0 * scaling).into(),
                     (10.0 * scaling).into(),
@@ -982,53 +951,45 @@ fn draw_subplot<B: Backend>(
         // get line placement
         let axis_offset = line_width as f64 / 2.0;
         let line = match placement {
-            AxisType::Y => {
-                draw::Line {
-                    p1: draw::Point {
-                        x: plot_area.xmin as f64,
-                        y: plot_area.ymin as f64 + axis_offset
-                    },
-                    p2: draw::Point {
-                        x: plot_area.xmin as f64,
-                        y: plot_area.ymax as f64 + axis_offset
-                    },
-                }
+            AxisType::Y => draw::Line {
+                p1: draw::Point {
+                    x: plot_area.xmin as f64,
+                    y: plot_area.ymin as f64 + axis_offset,
+                },
+                p2: draw::Point {
+                    x: plot_area.xmin as f64,
+                    y: plot_area.ymax as f64 + axis_offset,
+                },
             },
-            AxisType::SecondaryY => {
-                draw::Line {
-                    p1: draw::Point {
-                        x: plot_area.xmax as f64,
-                        y: plot_area.ymin as f64 + axis_offset
-                    },
-                    p2: draw::Point {
-                        x: plot_area.xmax as f64,
-                        y: plot_area.ymax as f64 - axis_offset
-                    },
-                }
+            AxisType::SecondaryY => draw::Line {
+                p1: draw::Point {
+                    x: plot_area.xmax as f64,
+                    y: plot_area.ymin as f64 + axis_offset,
+                },
+                p2: draw::Point {
+                    x: plot_area.xmax as f64,
+                    y: plot_area.ymax as f64 - axis_offset,
+                },
             },
-            AxisType::X => {
-                draw::Line {
-                    p1: draw::Point {
-                        x: plot_area.xmin as f64 - axis_offset,
-                        y: plot_area.ymin as f64
-                    },
-                    p2: draw::Point {
-                        x: plot_area.xmax as f64 + axis_offset,
-                        y: plot_area.ymin as f64
-                    },
-                }
+            AxisType::X => draw::Line {
+                p1: draw::Point {
+                    x: plot_area.xmin as f64 - axis_offset,
+                    y: plot_area.ymin as f64,
+                },
+                p2: draw::Point {
+                    x: plot_area.xmax as f64 + axis_offset,
+                    y: plot_area.ymin as f64,
+                },
             },
-            AxisType::SecondaryX => {
-                draw::Line {
-                    p1: draw::Point {
-                        x: plot_area.xmin as f64 + axis_offset,
-                        y: plot_area.ymax as f64
-                    },
-                    p2: draw::Point {
-                        x: plot_area.xmax as f64 + axis_offset,
-                        y: plot_area.ymax as f64
-                    },
-                }
+            AxisType::SecondaryX => draw::Line {
+                p1: draw::Point {
+                    x: plot_area.xmin as f64 + axis_offset,
+                    y: plot_area.ymax as f64,
+                },
+                p2: draw::Point {
+                    x: plot_area.xmax as f64 + axis_offset,
+                    y: plot_area.ymax as f64,
+                },
             },
         };
 
@@ -1161,12 +1122,16 @@ fn draw_subplot<B: Backend>(
         // draw ticks
         for (ticks, labels, outer_tick_length, inner_tick_length) in [
             (
-                axis.major_tick_locs, axis.major_tick_labels,
-                outer_major_tick_length, inner_major_tick_length,
+                axis.major_tick_locs,
+                axis.major_tick_labels,
+                outer_major_tick_length,
+                inner_major_tick_length,
             ),
             (
-                axis.minor_tick_locs, axis.minor_tick_labels,
-                outer_minor_tick_length, inner_minor_tick_length,
+                axis.minor_tick_locs,
+                axis.minor_tick_labels,
+                outer_minor_tick_length,
+                inner_minor_tick_length,
             ),
         ] {
             // deal with cases of no provided labels or wrong number of labels
@@ -1182,7 +1147,7 @@ fn draw_subplot<B: Backend>(
                 return Err(PltError::BadTickLabels(format!(
                     "number of tick labels does not match number of ticks on {}",
                     axis,
-                )))
+                )));
             } else {
                 labels
             };
@@ -1190,13 +1155,9 @@ fn draw_subplot<B: Backend>(
             // convert tick numbers to pixel locations
             let tick_locs = ticks.iter()
                 // convert to fraction
-                .map(|tick| {
-                    (tick - axis.limits.0) / (axis.limits.1 - axis.limits.0)
-                })
+                .map(|tick| (tick - axis.limits.0) / (axis.limits.1 - axis.limits.0))
                 // convert to pixel
-                .map(|frac| {
-                    plot_area.fractional_to_point(draw::Point { x: frac, y: frac })
-                })
+                .map(|frac| plot_area.fractional_to_point(draw::Point { x: frac, y: frac }))
                 .collect::<Vec<_>>();
 
             // draw ticks and labels
@@ -1292,7 +1253,7 @@ fn draw_subplot<B: Backend>(
                     },
                     ..Default::default()
                 });
-            };
+            }
         }
     }
 

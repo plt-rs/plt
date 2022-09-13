@@ -1,5 +1,5 @@
-use crate::PltError;
 use crate::subplot::{Subplot, SubplotDescriptor};
+use crate::PltError;
 
 #[cfg(doc)]
 use crate::figure::Figure;
@@ -23,10 +23,7 @@ impl<'a> Layout<'a> for SingleLayout<'a> {
     fn subplots(self) -> Vec<(Subplot<'a>, FractionalArea)> {
         vec![(
             self.subplot,
-            FractionalArea {
-                xmin: 0.0, xmax: 1.0,
-                ymin: 0.0, ymax: 1.0,
-            },
+            FractionalArea { xmin: 0.0, xmax: 1.0, ymin: 0.0, ymax: 1.0},
         )]
     }
 }
@@ -42,7 +39,7 @@ impl<'a> GridLayout<'a> {
     pub fn new(nrows: usize, ncols: usize) -> Self {
         let xextent = 1.0 / ncols as f64;
         let yextent = 1.0 / nrows as f64;
-        let areas = (0..(nrows*ncols))
+        let areas = (0..(nrows * ncols))
             .map(|index| {
                 // get row and column indices
                 let row = index / ncols;
@@ -68,9 +65,7 @@ impl<'a> GridLayout<'a> {
         }
     }
     /// Creates a uniform grid layout from a 2D array, filling only the spots with [`Some`] subplot.
-    pub fn from_array<
-        A: Into<ndarray::Array2<Option<Subplot<'a>>>>
-    >(subplots: A) -> Self {
+    pub fn from_array<A: Into<ndarray::Array2<Option<Subplot<'a>>>>>(subplots: A) -> Self {
         let subplots = subplots.into();
 
         let nrows = subplots.nrows();
@@ -78,7 +73,7 @@ impl<'a> GridLayout<'a> {
 
         let xextent = 1.0 / ncols as f64;
         let yextent = 1.0 / nrows as f64;
-        let areas = (0..(nrows*ncols))
+        let areas = (0..(nrows * ncols))
             .map(|index| {
                 // get row and column indices
                 let row = index / ncols;
@@ -106,12 +101,16 @@ impl<'a> GridLayout<'a> {
         }
     }
     /// Adds or replaces a subplot at the specified location.
-    pub fn insert(&mut self, (row, col): (usize, usize), subplot: Subplot<'a>) -> Result<(), PltError> {
+    pub fn insert(
+        &mut self,
+        (row, col): (usize, usize),
+        subplot: Subplot<'a>,
+    ) -> Result<(), PltError> {
         if (row + 1) > self.subplots.nrows() {
-            return Err(PltError::InvalidRow { row, nrows: self.subplots.nrows() })
+            return Err(PltError::InvalidRow { row, nrows: self.subplots.nrows() });
         }
         if (col + 1) > self.subplots.ncols() {
-            return Err(PltError::InvalidColumn { col, ncols: self.subplots.ncols() })
+            return Err(PltError::InvalidColumn { col, ncols: self.subplots.ncols() });
         }
 
         self.subplots[[row, col]] = subplot;

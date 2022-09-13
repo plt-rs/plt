@@ -1,4 +1,4 @@
-use rand_distr::{Normal, Distribution};
+use rand_distr::{Distribution, Normal};
 
 fn main() {
     // create true curve data
@@ -33,13 +33,15 @@ fn main() {
         .marker_outline(true)
         .marker_outline_color(plt::Color::BLACK)
         .label("data")
-        .plot(plt::PlotData::new(&xs, &scatter_ys)).unwrap();
+        .plot(plt::PlotData::new(&xs, &scatter_ys))
+        .unwrap();
 
     // plot true line
     subplot.plotter()
         .line(Some(plt::LineStyle::Dashed))
         .label("true curve")
-        .plot(plt::PlotData::new(&xs, &line_ys)).unwrap();
+        .plot(plt::PlotData::new(&xs, &line_ys))
+        .unwrap();
 
     // make figure and add subplot
     let mut fig = <plt::Figure>::new(&plt::FigureFormat {

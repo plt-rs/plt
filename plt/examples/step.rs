@@ -1,7 +1,7 @@
 fn main() {
     // create true curve data
     let bins = vec![0.0, 10.0, 20.0, 30.0, 40.0, 50.0];
-    let ys =   vec![1.0, 2.5,  1.9,  3.7,  0.2];
+    let ys = vec![1.0, 2.5, 1.9, 3.7, 0.2];
 
     // create new subplot
     let mut subplot = plt::Subplot::builder_detailed()
