@@ -7,6 +7,7 @@ use std::{array, fmt, f64, iter};
 pub struct Subplot<'a> {
     pub(crate) format: SubplotFormat,
     pub(crate) plot_infos: Vec<PlotInfo<'a>>,
+    pub(crate) fill_infos: Vec<FillInfo<'a>>,
     pub(crate) title: String,
     pub(crate) xaxis: AxisBuf,
     pub(crate) yaxis: AxisBuf,
@@ -87,6 +88,22 @@ impl<'a> Subplot<'a> {
         plotter.step_owned(steps, ys)
     }
 
+    /// Fills an area between two curves on the subplot with default formatting.
+    /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
+    pub fn fill_between<Dt: SeriesData + Clone + Default + 'a, Db: SeriesData + Clone + Default + 'a>(
+        &mut self,
+        top: Dt,
+        bottom: Db,
+    ) -> Result<(), PltError> {
+        self.fill_between_desc(FillDescriptor {
+            top,
+            bottom,
+            ..Default::default()
+        });
+
+        Ok(())
+    }
+
     /// Returns the format of this plot.
     pub fn format(&self) -> &SubplotFormat {
         &self.format
@@ -98,6 +115,7 @@ impl<'a> Subplot<'a> {
         Self {
             format: desc.format.clone(),
             plot_infos: vec![],
+            fill_infos: vec![],
             title: desc.title.to_string(),
             xaxis: desc.xaxis.to_buf(),
             yaxis: desc.yaxis.to_buf(),
@@ -178,6 +196,20 @@ impl<'a> Subplot<'a> {
             xaxis: desc.xaxis,
             yaxis: desc.yaxis,
             pixel_perfect: false,
+        });
+    }
+
+    fn fill_between_desc<Dt: SeriesData + Clone + 'a, Db: SeriesData + Clone + 'a>(
+        &mut self,
+        desc: FillDescriptor<Dt, Db>,
+    ) {
+        self.fill_infos.push(FillInfo {
+            label: desc.label.to_string(),
+            top: Box::new(desc.top),
+            bottom: Box::new(desc.bottom),
+            color: desc.color,
+            xaxis: desc.xaxis,
+            yaxis: desc.yaxis,
         });
     }
 }
@@ -874,6 +906,38 @@ impl Default for PlotDescriptor {
     }
 }
 
+/// Describes how to fill a specified area on a plot.
+#[derive(Clone, Debug)]
+pub(crate) struct FillDescriptor<Dt: SeriesData + Clone, Db: SeriesData + Clone> {
+    /// The label corresponding to this data, displayed in a legend.
+    pub label: String,
+    /// Defines the top of the area.
+    pub top: Dt,
+    /// Defines the bottom of the area.
+    pub bottom: Db,
+    /// The color to fill the area with.
+    pub color: Color,
+    /// Which axis to use as the x-axis.
+    pub xaxis: AxisType,
+    /// Which axis to use as the y-axis.
+    pub yaxis: AxisType,
+}
+impl<
+    Dt: SeriesData + Clone + Default,
+    Db: SeriesData + Clone + Default,
+> Default for FillDescriptor<Dt, Db> {
+    fn default() -> Self {
+        Self {
+            label: String::new(),
+            top: Dt::default(),
+            bottom: Db::default(),
+            color: Color { r: 1.0, g: 0.0, b: 0.0, a: 0.5 },
+            xaxis: AxisType::X,
+            yaxis: AxisType::Y,
+        }
+    }
+}
+
 /// Configuration for an axis.
 #[derive(Clone, Debug)]
 pub(crate) struct AxisDescriptor<S: AsRef<str>> {
@@ -941,6 +1005,17 @@ pub(crate) struct PlotInfo<'a> {
     pub xaxis: AxisType,
     pub yaxis: AxisType,
     pub pixel_perfect: bool,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct FillInfo<'a> {
+    #[allow(dead_code)]
+    pub label: String,
+    pub top: Box<dyn SeriesData + 'a>,
+    pub bottom: Box<dyn SeriesData + 'a>,
+    pub color: Color,
+    pub xaxis: AxisType,
+    pub yaxis: AxisType,
 }
 
 /// Holds borrowed data to be plotted.

@@ -911,6 +911,50 @@ fn draw_subplot<B: backend::Canvas>(
         }
     }
 
+    // fill each fill_between area
+    for fill_info in subplot.fill_infos.iter() {
+        let xlim = finalized_axes[&fill_info.xaxis].limits;
+        let ylim = finalized_axes[&fill_info.yaxis].limits;
+        let color = fill_info.color;
+        let top = &fill_info.top;
+        let bottom = &fill_info.bottom;
+
+        // draw top
+        canvas.draw_curve(draw::CurveDescriptor {
+            points: top.data()
+                .map(|(x, y)| {
+                    let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
+                    let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+
+                    let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
+                    draw::Point { x: point.x.round(), y: point.y.round() }
+                })
+                .collect::<Vec<_>>(),
+            //line_color: Color::TRANSPARENT,
+            line_color: color,
+            line_width: 1,
+            dashes: &[],
+            clip_area: Some(plot_area),
+        });
+        // draw bottom
+        canvas.draw_curve(draw::CurveDescriptor {
+            points: bottom.data()
+                .map(|(x, y)| {
+                    let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
+                    let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+
+                    let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
+                    draw::Point { x: point.x.round(), y: point.y.round() }
+                })
+                .collect::<Vec<_>>(),
+            //line_color: Color::TRANSPARENT,
+            line_color: color,
+            line_width: 1,
+            dashes: &[],
+            clip_area: Some(plot_area),
+        });
+    }
+
     // draw axis lines, labels, ticks, and tick labels for each axis
     for (placement, axis) in finalized_axes {
         // get line placement
