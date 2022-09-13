@@ -4,7 +4,7 @@ fn main() {
     let ys = vec![1.0, 2.5, 1.9, 3.7, 0.2];
 
     // create new subplot
-    let mut subplot = plt::Subplot::builder_detailed()
+    let mut subplot = plt::Subplot::builder()
         .format(plt::SubplotFormat {
             font_size: 16.0,
             ..Default::default()
@@ -17,6 +17,8 @@ fn main() {
         .ylimits(plt::Limits::Manual { min: 0.0, max: 5.0 })
         .secondary_xmajor_tick_marks(plt::TickSpacing::Count(6))
         .secondary_xminor_tick_marks(plt::TickSpacing::Count(31))
+        .xgrid(plt::Grid::Major)
+        .ygrid(plt::Grid::Major)
         .build();
 
     // plot step

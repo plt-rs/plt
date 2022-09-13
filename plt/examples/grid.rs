@@ -6,7 +6,7 @@ fn main() {
         .collect::<ndarray::Array1<_>>();
 
     // create new subplot
-    let mut subplot = plt::Subplot::builder_detailed()
+    let mut subplot = plt::Subplot::builder()
         .format(plt::SubplotFormat {
             font_size: 16.0,
             ..Default::default()
@@ -15,6 +15,8 @@ fn main() {
         .xlimits(plt::Limits::Manual { min: 0.0, max: 10.0 })
         .ylabel("y [arbitrary units]")
         .ylimits(plt::Limits::Manual { min: 0.0, max: 1e3 })
+        .xgrid(plt::Grid::Major)
+        .ygrid(plt::Grid::Major)
         .build();
 
     // plot true line

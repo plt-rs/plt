@@ -19,11 +19,6 @@ impl<'a> Subplot<'a> {
         SubplotBuilder { desc: SubplotDescriptor::default() }
     }
 
-    /// Returns a builder with detailed settings for constructing a subplot.
-    pub fn builder_detailed() -> SubplotBuilder<'a> {
-        SubplotBuilder { desc: SubplotDescriptor::detailed() }
-    }
-
     /// Returns a [`Plotter`] for plotting X, Y data on this subplot.
     pub fn plotter<'b, D: SeriesData + Clone + Default + 'a>(&'b mut self) -> Plotter<'a, 'b, D> {
         Plotter {
@@ -860,55 +855,6 @@ pub(crate) struct SubplotDescriptor<'a> {
     /// The secondary axis corresponding to y-values.
     pub secondary_yaxis: AxisDescriptor<&'a str>,
 }
-impl SubplotDescriptor<'_> {
-    /// Constructor for describing a subplot with a high level of detail.
-    pub fn detailed() -> Self {
-        Self {
-            format: SubplotFormat::default(),
-            title: "",
-            xaxis: AxisDescriptor {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::Major,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            yaxis: AxisDescriptor {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::Major,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            secondary_xaxis: AxisDescriptor {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
-            secondary_yaxis: AxisDescriptor {
-                label: "",
-                major_tick_marks: TickSpacing::On,
-                major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::On,
-                minor_tick_labels: TickLabels::None,
-                grid: Grid::None,
-                limits: Limits::Auto,
-                visible: true,
-            },
-        }
-    }
-}
 impl Default for SubplotDescriptor<'_> {
     fn default() -> Self {
         Self {
@@ -916,9 +862,9 @@ impl Default for SubplotDescriptor<'_> {
             title: "",
             xaxis: AxisDescriptor {
                 label: "",
-                major_tick_marks: TickSpacing::Auto,
+                major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
+                minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
                 limits: Limits::Auto,
@@ -926,9 +872,9 @@ impl Default for SubplotDescriptor<'_> {
             },
             yaxis: AxisDescriptor {
                 label: "",
-                major_tick_marks: TickSpacing::Auto,
+                major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
+                minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
                 limits: Limits::Auto,
@@ -936,9 +882,9 @@ impl Default for SubplotDescriptor<'_> {
             },
             secondary_xaxis: AxisDescriptor {
                 label: "",
-                major_tick_marks: TickSpacing::Auto,
+                major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
+                minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
                 limits: Limits::Auto,
@@ -946,9 +892,9 @@ impl Default for SubplotDescriptor<'_> {
             },
             secondary_yaxis: AxisDescriptor {
                 label: "",
-                major_tick_marks: TickSpacing::Auto,
+                major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
-                minor_tick_marks: TickSpacing::None,
+                minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
                 limits: Limits::Auto,
