@@ -811,26 +811,6 @@ impl StepDataOwned {
     }
 }
 
-/// Format for lines plotted between data points.
-#[derive(Copy, Clone, Debug)]
-pub struct Line {
-    /// The style of line drawn.
-    pub style: LineStyle,
-    /// The width of the line.
-    pub width: u32,
-    /// Optionally overrides the default color of the line.
-    pub color_override: Option<Color>,
-}
-impl Default for Line {
-    fn default() -> Self {
-        Self {
-            style: LineStyle::Solid,
-            width: 3,
-            color_override: None,
-        }
-    }
-}
-
 /// Plotting line styles.
 #[derive(Copy, Clone, Debug)]
 pub enum LineStyle {
@@ -840,35 +820,6 @@ pub enum LineStyle {
     Dashed,
     /// A dashed line with short dashes.
     ShortDashed,
-}
-
-/// Format for markers drawn at data points.
-#[derive(Clone, Debug)]
-pub struct Marker {
-    /// The shape of the marker.
-    pub style: MarkerStyle,
-    /// The size of the marker.
-    pub size: u32,
-    /// Optionally overrides the default fill color of the marker.
-    pub color_override: Option<Color>,
-    /// Whether to draw an outline.
-    pub outline: bool,
-    /// Format of an optional outline.
-    pub outline_format: Line,
-}
-impl Default for Marker {
-    fn default() -> Self {
-        Self {
-            style: MarkerStyle::Circle,
-            size: 3,
-            color_override: None,
-            outline: false,
-            outline_format: Line {
-                width: 2,
-                ..Default::default()
-            },
-        }
-    }
 }
 
 /// Marker shapes.
@@ -1077,4 +1028,53 @@ pub(crate) struct PlotInfo<'a> {
     pub xaxis: AxisType,
     pub yaxis: AxisType,
     pub pixel_perfect: bool,
+}
+
+/// Format for lines plotted between data points.
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct Line {
+    /// The style of line drawn.
+    pub style: LineStyle,
+    /// The width of the line.
+    pub width: u32,
+    /// Optionally overrides the default color of the line.
+    pub color_override: Option<Color>,
+}
+impl Default for Line {
+    fn default() -> Self {
+        Self {
+            style: LineStyle::Solid,
+            width: 3,
+            color_override: None,
+        }
+    }
+}
+
+/// Format for markers drawn at data points.
+#[derive(Clone, Debug)]
+pub(crate) struct Marker {
+    /// The shape of the marker.
+    pub style: MarkerStyle,
+    /// The size of the marker.
+    pub size: u32,
+    /// Optionally overrides the default fill color of the marker.
+    pub color_override: Option<Color>,
+    /// Whether to draw an outline.
+    pub outline: bool,
+    /// Format of an optional outline.
+    pub outline_format: Line,
+}
+impl Default for Marker {
+    fn default() -> Self {
+        Self {
+            style: MarkerStyle::Circle,
+            size: 3,
+            color_override: None,
+            outline: false,
+            outline_format: Line {
+                width: 2,
+                ..Default::default()
+            },
+        }
+    }
 }
