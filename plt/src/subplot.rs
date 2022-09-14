@@ -76,6 +76,7 @@ impl<'a> Subplot<'a> {
             marker,
             xaxis: desc.xaxis,
             yaxis: desc.yaxis,
+            pixel_perfect: false,
         });
     }
 }
@@ -999,4 +1000,5 @@ pub(crate) struct PlotInfo<'a> {
     pub marker: Option<Marker>,
     pub xaxis: AxisType,
     pub yaxis: AxisType,
+    pub pixel_perfect: bool,
 }

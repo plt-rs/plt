@@ -11,12 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed default configuration for `Subplot` to include major and minor ticks on all axes.
 - Removed `Subplot::builder_detailed`.
 
-### Fixed
-
-#### plt
-
-- Round data points to the nearest dot (pixel).
-
 ## [0.3.1] - 2022-09-09
 
 ### Added
