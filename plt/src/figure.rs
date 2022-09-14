@@ -473,9 +473,6 @@ fn draw_subplot<B: Backend>(
             AxisType::SecondaryX => &subplot.secondary_xaxis,
         };
 
-        println!("{:?}", placement);
-        println!("subplot:\n{:?}\n{:?}\n", axis.span, axis.limits);
-
         // get span and limits for each axis, if None, use values from opposite side
         let (span, limits) = if let (Some(span), Some(limits)) = (axis.span, axis.limits) {
             (span, limits)
