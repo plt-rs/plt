@@ -1,7 +1,6 @@
 use crate::layout::{FractionalArea, Layout};
 use crate::subplot::{
-    AxisType, Grid, Limits, Line, LineStyle, MarkerStyle, Subplot, TickDirection, TickLabels,
-    TickSpacing,
+    AxisType, Grid, Line, LineStyle, MarkerStyle, Subplot, TickDirection, TickLabels, TickSpacing,
 };
 use crate::{Backend, CairoBackend, Color, FileFormat, PltError};
 
@@ -464,56 +463,6 @@ fn draw_subplot<B: Backend>(
         (AxisType::SecondaryX, 0),
     ]);
 
-    // get span and limit requirements from each plot, for each axis
-    type SpanTuple = (f64, f64);
-    type LimitsTuple = (f64, f64);
-    let span_limits: HashMap<AxisType, Option<(SpanTuple, LimitsTuple)>> = AxisType::iter()
-        .map(|placement| {
-            let axis = match placement {
-                AxisType::Y => &subplot.yaxis,
-                AxisType::X => &subplot.xaxis,
-                AxisType::SecondaryY => &subplot.secondary_yaxis,
-                AxisType::SecondaryX => &subplot.secondary_xaxis,
-            };
-
-            // span is extent of the data being plotted
-            // limits is the extent of the actual plot area
-            // span <= limits
-            let span_lims = if let Limits::Manual { min, max } = axis.limits {
-                Some((
-                    (min, max), // span
-                    (min, max), // limits
-                ))
-            } else {
-                let lim = subplot.plot_infos.iter()
-                    .filter(|info| info.xaxis == placement || info.yaxis == placement)
-                    .map(|info| match placement {
-                        AxisType::Y | AxisType::SecondaryY => (info.data.ymin(), info.data.ymax()),
-                        AxisType::X | AxisType::SecondaryX => (info.data.xmin(), info.data.xmax()),
-                    })
-                    .reduce(|(min, max), (next_min, next_max)| {
-                        let min = if next_min <= min { next_min } else { min };
-                        let max = if next_max >= max { next_max } else { max };
-
-                        (min, max)
-                    });
-
-                if let Some((min, max)) = lim {
-                    let extent = max - min;
-
-                    Some((
-                        (min, max),                                 // span
-                        (min - 0.05 * extent, max + 0.05 * extent), // limits
-                    ))
-                } else {
-                    None
-                }
-            };
-
-            (placement, span_lims)
-        })
-        .collect();
-
     // get ticks and tick labels
     let mut finalized_axes = HashMap::<AxisType, AxisFinalized>::new();
     for placement in AxisType::iter() {
@@ -524,24 +473,33 @@ fn draw_subplot<B: Backend>(
             AxisType::SecondaryX => &subplot.secondary_xaxis,
         };
 
+        println!("{:?}", placement);
+        println!("subplot:\n{:?}\n{:?}\n", axis.span, axis.limits);
+
         // get span and limits for each axis, if None, use values from opposite side
-        let (span, limits) = if let Some((span, limits)) = span_limits[&placement] {
+        let (span, limits) = if let (Some(span), Some(limits)) = (axis.span, axis.limits) {
             (span, limits)
         } else {
-            match placement {
-                // use opposite side, if it has a value, otherwise default to (-1.0, 1.0)
-                AxisType::Y => {
-                    span_limits[&AxisType::SecondaryY].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
-                },
-                AxisType::SecondaryY => {
-                    span_limits[&AxisType::Y].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
-                },
+            // use opposite side, if it has a value, otherwise default to (-1.0, 1.0)
+            let opposite_axis = match placement {
                 AxisType::X => {
-                    span_limits[&AxisType::SecondaryX].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
+                    &subplot.secondary_xaxis
                 },
                 AxisType::SecondaryX => {
-                    span_limits[&AxisType::X].unwrap_or(((-1.0, 1.0), (-1.0, 1.0)))
+                    &subplot.xaxis
                 },
+                AxisType::Y => {
+                    &subplot.secondary_yaxis
+                },
+                AxisType::SecondaryY => {
+                    &subplot.yaxis
+                },
+            };
+
+            if let (Some(span), Some(limits)) = (opposite_axis.span, opposite_axis.limits) {
+                (span, limits)
+            } else {
+                ((-1.0, 1.0), (-1.0, 1.0))
             }
         };
 

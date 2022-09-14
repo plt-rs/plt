@@ -69,6 +69,52 @@ impl<'a> Subplot<'a> {
             None
         };
 
+        let xaxis = match desc.xaxis {
+            AxisType::X => &mut self.xaxis,
+            AxisType::Y => &mut self.yaxis,
+            AxisType::SecondaryX => &mut self.secondary_xaxis,
+            AxisType::SecondaryY => &mut self.secondary_yaxis,
+        };
+        match xaxis.limit_policy {
+            Limits::Auto => {
+                // span
+                xaxis.span = if let Some((xmin, xmax)) = xaxis.span {
+                    Some((f64::min(xmin, desc.data.xmin()), f64::max(xmax, desc.data.xmax())))
+                } else {
+                    Some((desc.data.xmin(), desc.data.xmax()))
+                };
+
+                // limits
+                let (xmin, xmax) = xaxis.span.unwrap();
+                let extent = xmax - xmin;
+                xaxis.limits = Some((xmin - 0.05 * extent, xmax + 0.05 * extent));
+            },
+            Limits::Manual { min: _, max: _ } => {},
+        };
+
+        let yaxis = match desc.yaxis {
+            AxisType::X => &mut self.xaxis,
+            AxisType::Y => &mut self.yaxis,
+            AxisType::SecondaryX => &mut self.secondary_xaxis,
+            AxisType::SecondaryY => &mut self.secondary_yaxis,
+        };
+        match yaxis.limit_policy {
+            Limits::Auto => {
+                // span
+                yaxis.span = if let Some((ymin, ymax)) = yaxis.span {
+                    Some((f64::min(ymin, desc.data.ymin()), f64::max(ymax, desc.data.ymax())))
+                } else {
+                    Some((desc.data.ymin(), desc.data.ymax()))
+                };
+
+                // limits
+                let (ymin, ymax) = yaxis.span.unwrap();
+                let extent = ymax - ymin;
+                yaxis.limits = Some((ymin - 0.05 * extent, ymax + 0.05 * extent));
+            },
+            Limits::Manual { min: _, max: _ } => {},
+        };
+
         self.plot_infos.push(PlotInfo {
             label: desc.label.to_string(),
             data: Box::new(desc.data),
@@ -110,7 +156,11 @@ impl<'a> SubplotBuilder<'a> {
     }
     /// Sets the limits of the default x-axis.
     pub fn xlimits(mut self, limits: Limits) -> Self {
-        self.desc.xaxis.limits = limits;
+        if let Limits::Manual { min, max } = limits {
+            self.desc.xaxis.limits = Some((min, max));
+            self.desc.xaxis.span = Some((min, max));
+        }
+        self.desc.xaxis.limit_policy = limits;
         self
     }
     /// Sets the grid settings for the default x-axis.
@@ -151,7 +201,11 @@ impl<'a> SubplotBuilder<'a> {
     }
     /// Sets the limits of the default y-axis.
     pub fn ylimits(mut self, limits: Limits) -> Self {
-        self.desc.yaxis.limits = limits;
+        if let Limits::Manual { min, max } = limits {
+            self.desc.yaxis.limits = Some((min, max));
+            self.desc.yaxis.span = Some((min, max));
+        }
+        self.desc.yaxis.limit_policy = limits;
         self
     }
     /// Sets the grid settings for the default y-axis.
@@ -192,7 +246,11 @@ impl<'a> SubplotBuilder<'a> {
     }
     /// Sets the limits of the secondary x-axis.
     pub fn secondary_xlimits(mut self, limits: Limits) -> Self {
-        self.desc.secondary_xaxis.limits = limits;
+        if let Limits::Manual { min, max } = limits {
+            self.desc.secondary_xaxis.limits = Some((min, max));
+            self.desc.secondary_xaxis.span = Some((min, max));
+        }
+        self.desc.secondary_xaxis.limit_policy = limits;
         self
     }
     /// Sets the grid settings for the secondary x-axis.
@@ -233,7 +291,11 @@ impl<'a> SubplotBuilder<'a> {
     }
     /// Sets the limits of the secondary y-axis.
     pub fn secondary_ylimits(mut self, limits: Limits) -> Self {
-        self.desc.secondary_yaxis.limits = limits;
+        if let Limits::Manual { min, max } = limits {
+            self.desc.secondary_yaxis.limits = Some((min, max));
+            self.desc.secondary_yaxis.span = Some((min, max));
+        }
+        self.desc.secondary_yaxis.limit_policy = limits;
         self
     }
     /// Sets the grid settings for the secondary y-axis.
@@ -868,7 +930,9 @@ impl Default for SubplotDescriptor<'_> {
                 minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
-                limits: Limits::Auto,
+                limit_policy: Limits::Auto,
+                limits: None,
+                span: None,
                 visible: true,
             },
             yaxis: AxisDescriptor {
@@ -878,7 +942,9 @@ impl Default for SubplotDescriptor<'_> {
                 minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
-                limits: Limits::Auto,
+                limit_policy: Limits::Auto,
+                limits: None,
+                span: None,
                 visible: true,
             },
             secondary_xaxis: AxisDescriptor {
@@ -888,7 +954,9 @@ impl Default for SubplotDescriptor<'_> {
                 minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
-                limits: Limits::Auto,
+                limit_policy: Limits::Auto,
+                limits: None,
+                span: None,
                 visible: true,
             },
             secondary_yaxis: AxisDescriptor {
@@ -898,7 +966,9 @@ impl Default for SubplotDescriptor<'_> {
                 minor_tick_marks: TickSpacing::On,
                 minor_tick_labels: TickLabels::None,
                 grid: Grid::None,
-                limits: Limits::Auto,
+                limit_policy: Limits::Auto,
+                limits: None,
+                span: None,
                 visible: true,
             },
         }
@@ -956,7 +1026,11 @@ pub(crate) struct AxisDescriptor<S: AsRef<str>> {
     /// Sets which, if any, tick marks on this axis have grid lines.
     pub grid: Grid,
     /// How the maximum and minimum plotted values should be set.
-    pub limits: Limits,
+    pub limit_policy: Limits,
+    /// The range of values covered by the axis, if the axis is plotted on.
+    pub limits: Option<(f64, f64)>,
+    /// The maximum and minimum plotted values, if the axis is plotted on.
+    pub span: Option<(f64, f64)>,
     /// Whether to draw the axis line.
     pub visible: bool,
 }
@@ -984,7 +1058,9 @@ impl<S: AsRef<str>> AxisDescriptor<S> {
             minor_tick_marks: self.minor_tick_marks.clone(),
             minor_tick_labels: self.minor_tick_labels.clone(),
             grid: self.grid,
+            limit_policy: self.limit_policy,
             limits: self.limits,
+            span: self.span,
             visible: self.visible,
         }
     }
