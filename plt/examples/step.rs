@@ -22,7 +22,7 @@ fn main() {
         .build();
 
     // plot step
-    subplot.plot(plt::StepData::new(&bins, &ys)).unwrap();
+    subplot.step(&bins, &ys).unwrap();
 
     // make figure and add subplot
     let mut fig = <plt::Figure>::default();

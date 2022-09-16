@@ -20,22 +20,71 @@ impl<'a> Subplot<'a> {
     }
 
     /// Returns a [`Plotter`] for plotting X, Y data on this subplot.
-    pub fn plotter<'b, D: SeriesData + Clone + Default + 'a>(&'b mut self) -> Plotter<'a, 'b, D> {
+    pub fn plotter<'b>(&'b mut self) -> Plotter<'a, 'b> {
         Plotter {
             subplot: self,
             desc: PlotDescriptor::default(),
         }
     }
 
-    /// Plots X, Y data on this subplot with default plot formatting.
+    /// Plots borrowed X, Y data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().plot()` on a [`Subplot`].
-    pub fn plot<D: SeriesData + Clone + Default + 'a>(&mut self, data: D) -> Result<(), PltError> {
+    pub fn plot<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        &mut self,
+        xs: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
         let plotter = Plotter {
             subplot: self,
             desc: PlotDescriptor::default(),
         };
 
-        plotter.plot(data)
+        plotter.plot(xs, ys)
+    }
+
+    /// Plots owned X, Y data on this subplot with default plot formatting.
+    /// Shortcut for calling `.plotter().plot_owned()` on a [`Subplot`].
+    pub fn plot_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        &mut self,
+        xs: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
+        let plotter = Plotter {
+            subplot: self,
+            desc: PlotDescriptor::default(),
+        };
+
+        plotter.plot_owned(xs, ys)
+    }
+
+    /// Plots borrowed step plot data on this subplot with default plot formatting.
+    /// Shortcut for calling `.plotter().step()` on a [`Subplot`].
+    pub fn step<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        &mut self,
+        steps: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
+        let plotter = Plotter {
+            subplot: self,
+            desc: PlotDescriptor::default(),
+        };
+
+        plotter.step(steps, ys)
+    }
+
+    /// Plots owned step plot data on this subplot with default plot formatting.
+    /// Shortcut for calling `.plotter().step_owned()` on a [`Subplot`].
+    pub fn step_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        &mut self,
+        steps: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
+        let plotter = Plotter {
+            subplot: self,
+            desc: PlotDescriptor::default(),
+        };
+
+        plotter.step_owned(steps, ys)
     }
 
     /// Returns the format of this plot.
@@ -44,6 +93,7 @@ impl<'a> Subplot<'a> {
     }
 }
 impl<'a> Subplot<'a> {
+    /// Internal constructor.
     pub(crate) fn new(desc: &SubplotDescriptor) -> Self {
         Self {
             format: desc.format.clone(),
@@ -57,7 +107,12 @@ impl<'a> Subplot<'a> {
     }
 }
 impl<'a> Subplot<'a> {
-    fn plot_desc<D: SeriesData + Clone + 'a>(&mut self, desc: PlotDescriptor<D>) {
+    /// Internal plot setup function.
+    fn plot_desc<D: SeriesData + Clone + 'a>(
+        &mut self,
+        desc: PlotDescriptor,
+        data: D,
+    ) {
         let line = if desc.line {
             Some(desc.line_format)
         } else {
@@ -79,9 +134,9 @@ impl<'a> Subplot<'a> {
             Limits::Auto => {
                 // span
                 xaxis.span = if let Some((xmin, xmax)) = xaxis.span {
-                    Some((f64::min(xmin, desc.data.xmin()), f64::max(xmax, desc.data.xmax())))
+                    Some((f64::min(xmin, data.xmin()), f64::max(xmax, data.xmax())))
                 } else {
-                    Some((desc.data.xmin(), desc.data.xmax()))
+                    Some((data.xmin(), data.xmax()))
                 };
 
                 // limits
@@ -102,9 +157,9 @@ impl<'a> Subplot<'a> {
             Limits::Auto => {
                 // span
                 yaxis.span = if let Some((ymin, ymax)) = yaxis.span {
-                    Some((f64::min(ymin, desc.data.ymin()), f64::max(ymax, desc.data.ymax())))
+                    Some((f64::min(ymin, data.ymin()), f64::max(ymax, data.ymax())))
                 } else {
-                    Some((desc.data.ymin(), desc.data.ymax()))
+                    Some((data.ymin(), data.ymax()))
                 };
 
                 // limits
@@ -117,7 +172,7 @@ impl<'a> Subplot<'a> {
 
         self.plot_infos.push(PlotInfo {
             label: desc.label.to_string(),
-            data: Box::new(desc.data),
+            data: Box::new(data),
             line,
             marker,
             xaxis: desc.xaxis,
@@ -474,20 +529,111 @@ pub enum Limits {
 }
 
 /// Plots data on a subplot using the builder pattern.
-pub struct Plotter<'a, 'b, D: SeriesData + Clone> {
+pub struct Plotter<'a, 'b> {
     subplot: &'b mut Subplot<'a>,
-    desc: PlotDescriptor<D>,
+    desc: PlotDescriptor,
 }
-impl<'a, 'b, D: SeriesData + Clone + 'a> Plotter<'a, 'b, D> {
-    /// Sets the data to be plotted and consumes the plotter.
-    pub fn plot(self, data: D) -> Result<(), PltError> {
-        if !data.is_correctly_sized() {
-            return Err(PltError::InvalidData("Data is not correctly sized".to_owned()));
-        } else if data.data().any(|(x, y)| x.is_nan() || y.is_nan()) {
-            return Err(PltError::InvalidData("Data has NaN value".to_owned()));
+impl<'a, 'b> Plotter<'a, 'b> {
+    /// Borrows data to be plotted and consumes the plotter.
+    pub fn plot<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        self,
+        xs: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
+        let xdata = xs.into();
+        let ydata = ys.into();
+
+        if xdata.len() != ydata.len() {
+            return Err(PltError::InvalidData(
+                "Data is not correctly sized. x-data and y-data should be same length".to_owned()
+            ));
+        } else if xdata.iter().any(|x| x.is_nan()) {
+            return Err(PltError::InvalidData("x-data has NaN value".to_owned()));
+        } else if ydata.iter().any(|y| y.is_nan()) {
+            return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
         }
 
-        self.subplot.plot_desc(PlotDescriptor { data, ..self.desc });
+        let data = PlotData::new(xdata, ydata);
+
+        self.subplot.plot_desc(self.desc, data);
+
+        Ok(())
+    }
+
+    /// Takes ownership of data to be plotted and consumes the plotter.
+    pub fn plot_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        self,
+        xs: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
+        let xdata = xs.into();
+        let ydata = ys.into();
+
+        if xdata.len() != ydata.len() {
+            return Err(PltError::InvalidData(
+                "Data is not correctly sized. x-data and y-data should be same length".to_owned()
+            ));
+        } else if xdata.iter().any(|x| x.is_nan()) {
+            return Err(PltError::InvalidData("x-data has NaN value".to_owned()));
+        } else if ydata.iter().any(|y| y.is_nan()) {
+            return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
+        }
+
+        let data = PlotDataOwned::new(xdata, ydata);
+
+        self.subplot.plot_desc(self.desc, data);
+
+        Ok(())
+    }
+
+    /// Borrows step data to be plotted and consumes the plotter.
+    pub fn step<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        self,
+        steps: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
+        let step_data = steps.into();
+        let ydata = ys.into();
+
+        if step_data.len() != ydata.len() + 1 {
+            return Err(PltError::InvalidData(
+                "Data is not correctly sized. There should be one more step than y-value".to_owned()
+            ));
+        } else if step_data.iter().any(|step| step.is_nan()) {
+            return Err(PltError::InvalidData("step-data has NaN value".to_owned()));
+        } else if ydata.iter().any(|y| y.is_nan()) {
+            return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
+        }
+
+        let data = StepData::new(step_data, ydata);
+
+        self.subplot.plot_desc(self.desc, data);
+
+        Ok(())
+    }
+
+    /// Takes ownership of step data to be plotted and consumes the plotter.
+    pub fn step_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        self,
+        steps: Xs,
+        ys: Ys,
+    ) -> Result<(), PltError> {
+        let step_data = steps.into();
+        let ydata = ys.into();
+
+        if step_data.len() != ydata.len() + 1 {
+            return Err(PltError::InvalidData(
+                "Data is not correctly sized. There should be one more step than y-value".to_owned()
+            ));
+        } else if step_data.iter().any(|step| step.is_nan()) {
+            return Err(PltError::InvalidData("step-data has NaN value".to_owned()));
+        } else if ydata.iter().any(|y| y.is_nan()) {
+            return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
+        }
+
+        let data = StepDataOwned::new(step_data, ydata);
+
+        self.subplot.plot_desc(self.desc, data);
 
         Ok(())
     }
@@ -601,216 +747,6 @@ impl<'a, 'b, D: SeriesData + Clone + 'a> Plotter<'a, 'b, D> {
     }
 }
 
-/// Holds borrowed data to be plotted.
-#[derive(Copy, Clone, Debug)]
-pub struct PlotData<'a> {
-    xdata: ndarray::ArrayView1<'a, f64>,
-    ydata: ndarray::ArrayView1<'a, f64>,
-}
-impl Default for PlotData<'_> {
-    fn default() -> Self {
-        Self {
-            xdata: ndarray::ArrayView1::<f64>::from(&[]),
-            ydata: ndarray::ArrayView1::<f64>::from(&[]),
-        }
-    }
-}
-impl SeriesData for PlotData<'_> {
-    fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.ydata.iter().cloned(),
-        ))
-    }
-
-    fn is_correctly_sized(&self) -> bool {
-        self.xdata.len() == self.ydata.len()
-    }
-
-    fn xmin(&self) -> f64 {
-        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-}
-impl<'a> PlotData<'a> {
-    /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
-        xs: Xs,
-        ys: Ys,
-    ) -> Self {
-        let xdata = xs.into();
-        let ydata = ys.into();
-
-        Self { xdata, ydata }
-    }
-}
-
-/// Holds owned data to be plotted.
-#[derive(Clone, Debug)]
-pub struct PlotDataOwned {
-    xdata: ndarray::Array1<f64>,
-    ydata: ndarray::Array1<f64>,
-}
-impl Default for PlotDataOwned {
-    fn default() -> Self {
-        Self {
-            xdata: ndarray::Array1::<f64>::default(0),
-            ydata: ndarray::Array1::<f64>::default(0),
-        }
-    }
-}
-impl SeriesData for PlotDataOwned {
-    fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
-        Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.ydata.iter().cloned(),
-        ))
-    }
-
-    fn is_correctly_sized(&self) -> bool {
-        self.xdata.len() == self.ydata.len()
-    }
-
-    fn xmin(&self) -> f64 {
-        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-}
-impl PlotDataOwned {
-    /// Main constructor, taking separate arrays of x-values and y-values.
-    pub fn new<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        xs: Xs,
-        ys: Ys,
-    ) -> Self {
-        let xdata = xs.into();
-        let ydata = ys.into();
-
-        Self { xdata, ydata }
-    }
-}
-
-/// Holds borrowed step data to be plotted.
-#[derive(Copy, Clone, Debug)]
-pub struct StepData<'a> {
-    edges: ndarray::ArrayView1<'a, f64>,
-    ydata: ndarray::ArrayView1<'a, f64>,
-}
-impl Default for StepData<'_> {
-    fn default() -> Self {
-        Self {
-            edges: ndarray::ArrayView1::<f64>::from(&[]),
-            ydata: ndarray::ArrayView1::<f64>::from(&[]),
-        }
-    }
-}
-impl SeriesData for StepData<'_> {
-    fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.edges.windows(2).into_iter().flatten().cloned(),
-            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
-        ))
-    }
-
-    fn is_correctly_sized(&self) -> bool {
-        self.edges.len() == self.ydata.len() + 1
-    }
-
-    fn xmin(&self) -> f64 {
-        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-}
-impl<'a> StepData<'a> {
-    /// Main constructor, taking separate array views of steps and y-values.
-    /// There should be one more step edge than y-values.
-    pub fn new<Es: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
-        edges: Es,
-        ys: Ys,
-    ) -> Self {
-        let edges = edges.into();
-        let ydata = ys.into();
-
-        Self { edges, ydata }
-    }
-}
-
-/// Holds owned step data to be plotted.
-#[derive(Clone, Debug)]
-pub struct StepDataOwned {
-    edges: ndarray::Array1<f64>,
-    ydata: ndarray::Array1<f64>,
-}
-impl Default for StepDataOwned {
-    fn default() -> Self {
-        Self {
-            edges: ndarray::Array1::<f64>::default(0),
-            ydata: ndarray::Array1::<f64>::default(0),
-        }
-    }
-}
-impl SeriesData for StepDataOwned {
-    fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
-        Box::new(iter::zip(
-            self.edges.windows(2).into_iter().flatten().cloned(),
-            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
-        ))
-    }
-
-    fn is_correctly_sized(&self) -> bool {
-        self.edges.len() == self.ydata.len() + 1
-    }
-
-    fn xmin(&self) -> f64 {
-        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-}
-impl StepDataOwned {
-    /// Main constructor, taking separate arrays of step edges and y-values.
-    /// There should be one more step edge than y-values.
-    pub fn new<Es: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        edges: Es,
-        ys: Ys,
-    ) -> Self {
-        let edges = edges.into();
-        let ydata = ys.into();
-
-        Self { edges, ydata }
-    }
-}
-
 /// Plotting line styles.
 #[derive(Copy, Clone, Debug)]
 pub enum LineStyle {
@@ -830,26 +766,6 @@ pub enum MarkerStyle {
     /// A square marker.
     Square,
 }
-
-// traits
-
-/// Implemented for data that can be represented by pairs of floats to be plotted.
-pub trait SeriesData: dyn_clone::DynClone + std::fmt::Debug {
-    /// Returns data in an [`Iterator`] over x, y pairs.
-    fn data<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
-    /// Determines if the provided data is valid.
-    fn is_correctly_sized(&self) -> bool;
-    /// The smallest x-value.
-    fn xmin(&self) -> f64;
-    /// The largest x-value.
-    fn xmax(&self) -> f64;
-    /// The smallest y-value.
-    fn ymin(&self) -> f64;
-    /// The largest y-value.
-    fn ymax(&self) -> f64;
-}
-
-dyn_clone::clone_trait_object!(SeriesData);
 
 // private
 
@@ -928,11 +844,9 @@ impl Default for SubplotDescriptor<'_> {
 
 /// Describes data and how it should be plotted.
 #[derive(Clone, Debug)]
-pub(crate) struct PlotDescriptor<D: SeriesData + Clone> {
+pub(crate) struct PlotDescriptor {
     /// The label corresponding to this data, displayed in a legend.
     pub label: String,
-    /// The data to be plotted.
-    pub data: D,
     /// Whether to draw lines between data points.
     pub line: bool,
     /// Whether to draw markers at data points.
@@ -946,11 +860,10 @@ pub(crate) struct PlotDescriptor<D: SeriesData + Clone> {
     /// Which axis to use as the y-axis.
     pub yaxis: AxisType,
 }
-impl<D: SeriesData + Clone + Default> Default for PlotDescriptor<D> {
+impl Default for PlotDescriptor {
     fn default() -> Self {
         Self {
             label: String::new(),
-            data: D::default(),
             line: true,
             marker: false,
             line_format: Line::default(),
@@ -1030,6 +943,200 @@ pub(crate) struct PlotInfo<'a> {
     pub pixel_perfect: bool,
 }
 
+/// Holds borrowed data to be plotted.
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct PlotData<'a> {
+    xdata: ndarray::ArrayView1<'a, f64>,
+    ydata: ndarray::ArrayView1<'a, f64>,
+}
+impl Default for PlotData<'_> {
+    fn default() -> Self {
+        Self {
+            xdata: ndarray::ArrayView1::<f64>::from(&[]),
+            ydata: ndarray::ArrayView1::<f64>::from(&[]),
+        }
+    }
+}
+impl SeriesData for PlotData<'_> {
+    fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.ydata.iter().cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn ymax(&self) -> f64 {
+        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+}
+impl<'a> PlotData<'a> {
+    /// Main constructor, taking separate array views of x-values and y-values.
+    pub fn new<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        xs: Xs,
+        ys: Ys,
+    ) -> Self {
+        let xdata = xs.into();
+        let ydata = ys.into();
+
+        Self { xdata, ydata }
+    }
+}
+
+/// Holds owned data to be plotted.
+#[derive(Clone, Debug)]
+pub(crate) struct PlotDataOwned {
+    xdata: ndarray::Array1<f64>,
+    ydata: ndarray::Array1<f64>,
+}
+impl Default for PlotDataOwned {
+    fn default() -> Self {
+        Self {
+            xdata: ndarray::Array1::<f64>::default(0),
+            ydata: ndarray::Array1::<f64>::default(0),
+        }
+    }
+}
+impl SeriesData for PlotDataOwned {
+    fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.ydata.iter().cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn ymax(&self) -> f64 {
+        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+}
+impl PlotDataOwned {
+    /// Main constructor, taking separate arrays of x-values and y-values.
+    pub fn new<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        xs: Xs,
+        ys: Ys,
+    ) -> Self {
+        let xdata = xs.into();
+        let ydata = ys.into();
+
+        Self { xdata, ydata }
+    }
+}
+
+/// Holds borrowed step data to be plotted.
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct StepData<'a> {
+    edges: ndarray::ArrayView1<'a, f64>,
+    ydata: ndarray::ArrayView1<'a, f64>,
+}
+impl Default for StepData<'_> {
+    fn default() -> Self {
+        Self {
+            edges: ndarray::ArrayView1::<f64>::from(&[]),
+            ydata: ndarray::ArrayView1::<f64>::from(&[]),
+        }
+    }
+}
+impl SeriesData for StepData<'_> {
+    fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
+        Box::new(iter::zip(
+            self.edges.windows(2).into_iter().flatten().cloned(),
+            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn ymax(&self) -> f64 {
+        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+}
+impl<'a> StepData<'a> {
+    /// Main constructor, taking separate array views of steps and y-values.
+    /// There should be one more step edge than y-values.
+    pub fn new<Es: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+        edges: Es,
+        ys: Ys,
+    ) -> Self {
+        let edges = edges.into();
+        let ydata = ys.into();
+
+        Self { edges, ydata }
+    }
+}
+
+/// Holds owned step data to be plotted.
+#[derive(Clone, Debug)]
+pub(crate) struct StepDataOwned {
+    edges: ndarray::Array1<f64>,
+    ydata: ndarray::Array1<f64>,
+}
+impl Default for StepDataOwned {
+    fn default() -> Self {
+        Self {
+            edges: ndarray::Array1::<f64>::default(0),
+            ydata: ndarray::Array1::<f64>::default(0),
+        }
+    }
+}
+impl SeriesData for StepDataOwned {
+    fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
+        Box::new(iter::zip(
+            self.edges.windows(2).into_iter().flatten().cloned(),
+            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn ymax(&self) -> f64 {
+        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+}
+impl StepDataOwned {
+    /// Main constructor, taking separate arrays of step edges and y-values.
+    /// There should be one more step edge than y-values.
+    pub fn new<Es: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
+        edges: Es,
+        ys: Ys,
+    ) -> Self {
+        let edges = edges.into();
+        let ydata = ys.into();
+
+        Self { edges, ydata }
+    }
+}
+
 /// Format for lines plotted between data points.
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Line {
@@ -1078,3 +1185,21 @@ impl Default for Marker {
         }
     }
 }
+
+// traits
+
+/// Implemented for data that can be represented by pairs of floats to be plotted.
+pub(crate) trait SeriesData: dyn_clone::DynClone + std::fmt::Debug {
+    /// Returns data in an [`Iterator`] over x, y pairs.
+    fn data<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
+    /// The smallest x-value.
+    fn xmin(&self) -> f64;
+    /// The largest x-value.
+    fn xmax(&self) -> f64;
+    /// The smallest y-value.
+    fn ymin(&self) -> f64;
+    /// The largest y-value.
+    fn ymax(&self) -> f64;
+}
+
+dyn_clone::clone_trait_object!(SeriesData);

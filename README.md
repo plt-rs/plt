@@ -18,10 +18,8 @@ To get started, see the [examples](https://github.com/plt-rs/plt/tree/main/plt/e
 ### Example
 ```rust
 // create data
-let xs = ndarray::Array1::linspace(0.0, 10.0, 40);
-let ys = xs.iter()
-    .map(|x: &f64| x.powi(3))
-    .collect::<ndarray::Array1<_>>();
+let xs: Vec<f64> = (0..=100).map(|n: u32| n as f64 * 0.1).collect();
+let ys: Vec<f64> = xs.iter().map(|x| x.powi(3)).collect();
 
 // create subplot
 let mut sp = plt::Subplot::builder()
@@ -30,7 +28,7 @@ let mut sp = plt::Subplot::builder()
     .build();
 
 // plot data
-sp.plot(plt::PlotData::new(&xs, &ys)).unwrap();
+sp.plot(&xs, &ys).unwrap();
 
 // make figure and add subplot
 let mut fig = <plt::Figure>::default();

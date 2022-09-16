@@ -23,7 +23,7 @@ fn main() {
     subplot.plotter()
         .line(Some(plt::LineStyle::Dashed))
         .label("true curve")
-        .plot(plt::PlotData::new(&xs, &ys))
+        .plot(&xs, &ys)
         .unwrap();
 
     // make figure and add subplots in grid

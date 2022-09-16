@@ -11,7 +11,7 @@ fn main() {
         .build();
 
     // plot data
-    sp.plot(plt::PlotData::new(&xs, &ys)).unwrap();
+    sp.plot(&xs, &ys).unwrap();
 
     // make figure and add subplot
     let mut fig = <plt::Figure>::default();

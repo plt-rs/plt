@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Major Changes
+
+#### plt
+
+- Separated `plot` into `plot`, `plot_owned`, `step`, and `step_owned`.
+- `plot` functions now take data directly.
+- Removed `SeriesData` and all implementors from public API.
+
 ### Breaking Changes
 
 #### plt
@@ -19,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### plt
 
 - Changed how and when limits are determined internally.
+- `PlotDescriptor` no longer holds data, data is passed separately.
+- Changed doc / readme example to use `Vec` instead of `ndarray::Array1`.
 
 ## [0.3.1] - 2022-09-09
 

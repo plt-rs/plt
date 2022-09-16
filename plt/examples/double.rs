@@ -13,12 +13,12 @@ fn main() {
         .build();
 
     // plot data on primary y-axis
-    sp.plot(plt::PlotData::new(&xs, &y1s)).unwrap();
+    sp.plot(&xs, &y1s).unwrap();
 
     // plot data on secondary y-axis
     sp.plotter()
         .use_secondary_yaxis()
-        .plot(plt::PlotData::new(&xs, &y2s))
+        .plot(&xs, &y2s)
         .unwrap();
 
     // make figure and add subplot
