@@ -502,6 +502,8 @@ fn draw_subplot<B: backend::Canvas>(
         };
 
         let is_primary = subplot.plot_infos.iter()
+            .any(|info| info.xaxis == placement || info.yaxis == placement)
+            | subplot.fill_infos.iter()
             .any(|info| info.xaxis == placement || info.yaxis == placement);
 
         // get major tick marks
@@ -916,12 +918,11 @@ fn draw_subplot<B: backend::Canvas>(
         let xlim = finalized_axes[&fill_info.xaxis].limits;
         let ylim = finalized_axes[&fill_info.yaxis].limits;
         let color = fill_info.color;
-        let top = &fill_info.top;
-        let bottom = &fill_info.bottom;
+        let data = &fill_info.data;
 
         // draw top
         canvas.draw_curve(draw::CurveDescriptor {
-            points: top.data()
+            points: data.top()
                 .map(|(x, y)| {
                     let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
                     let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
@@ -938,7 +939,7 @@ fn draw_subplot<B: backend::Canvas>(
         });
         // draw bottom
         canvas.draw_curve(draw::CurveDescriptor {
-            points: bottom.data()
+            points: data.bottom()
                 .map(|(x, y)| {
                     let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
                     let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);

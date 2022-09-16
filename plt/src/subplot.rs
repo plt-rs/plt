@@ -90,16 +90,19 @@ impl<'a> Subplot<'a> {
 
     /// Fills an area between two curves on the subplot with default formatting.
     /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
-    pub fn fill_between<Dt: SeriesData + Clone + Default + 'a, Db: SeriesData + Clone + Default + 'a>(
+    pub fn fill_between<
+        Xs: Into<ndarray::ArrayView1<'a, f64>>,
+        Ts: Into<ndarray::ArrayView1<'a, f64>>,
+        Bs: Into<ndarray::ArrayView1<'a, f64>>,
+    >(
         &mut self,
-        top: Dt,
-        bottom: Db,
+        xs: Xs,
+        tops: Ts,
+        bottoms: Bs,
     ) -> Result<(), PltError> {
-        self.fill_between_desc(FillDescriptor {
-            top,
-            bottom,
-            ..Default::default()
-        });
+        let data = FillBetweenData::new(xs, tops, bottoms);
+
+        self.fill_between_desc(FillDescriptor::default(), data);
 
         Ok(())
     }
@@ -199,14 +202,61 @@ impl<'a> Subplot<'a> {
         });
     }
 
-    fn fill_between_desc<Dt: SeriesData + Clone + 'a, Db: SeriesData + Clone + 'a>(
+    /// Internal fill between setup function.
+    fn fill_between_desc<D: FillData + 'a>(
         &mut self,
-        desc: FillDescriptor<Dt, Db>,
+        desc: FillDescriptor,
+        data: D,
     ) {
+        let xaxis = match desc.xaxis {
+            AxisType::X => &mut self.xaxis,
+            AxisType::Y => &mut self.yaxis,
+            AxisType::SecondaryX => &mut self.secondary_xaxis,
+            AxisType::SecondaryY => &mut self.secondary_yaxis,
+        };
+        match xaxis.limit_policy {
+            Limits::Auto => {
+                // span
+                xaxis.span = if let Some((xmin, xmax)) = xaxis.span {
+                    Some((f64::min(xmin, data.xmin()), f64::max(xmax, data.xmax())))
+                } else {
+                    Some((data.xmin(), data.xmax()))
+                };
+
+                // limits
+                let (xmin, xmax) = xaxis.span.unwrap();
+                let extent = xmax - xmin;
+                xaxis.limits = Some((xmin - 0.05 * extent, xmax + 0.05 * extent));
+            },
+            Limits::Manual { min: _, max: _ } => {},
+        };
+
+        let yaxis = match desc.yaxis {
+            AxisType::X => &mut self.xaxis,
+            AxisType::Y => &mut self.yaxis,
+            AxisType::SecondaryX => &mut self.secondary_xaxis,
+            AxisType::SecondaryY => &mut self.secondary_yaxis,
+        };
+        match yaxis.limit_policy {
+            Limits::Auto => {
+                // span
+                yaxis.span = if let Some((ymin, ymax)) = yaxis.span {
+                    Some((f64::min(ymin, data.ymin()), f64::max(ymax, data.ymax())))
+                } else {
+                    Some((data.ymin(), data.ymax()))
+                };
+
+                // limits
+                let (ymin, ymax) = yaxis.span.unwrap();
+                let extent = ymax - ymin;
+                yaxis.limits = Some((ymin - 0.05 * extent, ymax + 0.05 * extent));
+            },
+            Limits::Manual { min: _, max: _ } => {},
+        };
+
         self.fill_infos.push(FillInfo {
             label: desc.label.to_string(),
-            top: Box::new(desc.top),
-            bottom: Box::new(desc.bottom),
+            data: Box::new(data),
             color: desc.color,
             xaxis: desc.xaxis,
             yaxis: desc.yaxis,
@@ -908,13 +958,9 @@ impl Default for PlotDescriptor {
 
 /// Describes how to fill a specified area on a plot.
 #[derive(Clone, Debug)]
-pub(crate) struct FillDescriptor<Dt: SeriesData + Clone, Db: SeriesData + Clone> {
+pub(crate) struct FillDescriptor {
     /// The label corresponding to this data, displayed in a legend.
     pub label: String,
-    /// Defines the top of the area.
-    pub top: Dt,
-    /// Defines the bottom of the area.
-    pub bottom: Db,
     /// The color to fill the area with.
     pub color: Color,
     /// Which axis to use as the x-axis.
@@ -922,18 +968,62 @@ pub(crate) struct FillDescriptor<Dt: SeriesData + Clone, Db: SeriesData + Clone>
     /// Which axis to use as the y-axis.
     pub yaxis: AxisType,
 }
-impl<
-    Dt: SeriesData + Clone + Default,
-    Db: SeriesData + Clone + Default,
-> Default for FillDescriptor<Dt, Db> {
+impl Default for FillDescriptor {
     fn default() -> Self {
         Self {
             label: String::new(),
-            top: Dt::default(),
-            bottom: Db::default(),
             color: Color { r: 1.0, g: 0.0, b: 0.0, a: 0.5 },
             xaxis: AxisType::X,
             yaxis: AxisType::Y,
+        }
+    }
+}
+
+/// Format for lines plotted between data points.
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct Line {
+    /// The style of line drawn.
+    pub style: LineStyle,
+    /// The width of the line.
+    pub width: u32,
+    /// Optionally overrides the default color of the line.
+    pub color_override: Option<Color>,
+}
+impl Default for Line {
+    fn default() -> Self {
+        Self {
+            style: LineStyle::Solid,
+            width: 3,
+            color_override: None,
+        }
+    }
+}
+
+/// Format for markers drawn at data points.
+#[derive(Clone, Debug)]
+pub(crate) struct Marker {
+    /// The shape of the marker.
+    pub style: MarkerStyle,
+    /// The size of the marker.
+    pub size: u32,
+    /// Optionally overrides the default fill color of the marker.
+    pub color_override: Option<Color>,
+    /// Whether to draw an outline.
+    pub outline: bool,
+    /// Format of an optional outline.
+    pub outline_format: Line,
+}
+impl Default for Marker {
+    fn default() -> Self {
+        Self {
+            style: MarkerStyle::Circle,
+            size: 3,
+            color_override: None,
+            outline: false,
+            outline_format: Line {
+                width: 2,
+                ..Default::default()
+            },
         }
     }
 }
@@ -1011,8 +1101,7 @@ pub(crate) struct PlotInfo<'a> {
 pub(crate) struct FillInfo<'a> {
     #[allow(dead_code)]
     pub label: String,
-    pub top: Box<dyn SeriesData + 'a>,
-    pub bottom: Box<dyn SeriesData + 'a>,
+    pub data: Box<dyn FillData + 'a>,
     pub color: Color,
     pub xaxis: AxisType,
     pub yaxis: AxisType,
@@ -1212,52 +1301,66 @@ impl StepDataOwned {
     }
 }
 
-/// Format for lines plotted between data points.
+/// Holds borrowed data describing an area to be filled.
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct Line {
-    /// The style of line drawn.
-    pub style: LineStyle,
-    /// The width of the line.
-    pub width: u32,
-    /// Optionally overrides the default color of the line.
-    pub color_override: Option<Color>,
+pub(crate) struct FillBetweenData<'a> {
+    xdata: ndarray::ArrayView1<'a, f64>,
+    top_data: ndarray::ArrayView1<'a, f64>,
+    bottom_data: ndarray::ArrayView1<'a, f64>,
 }
-impl Default for Line {
+impl Default for FillBetweenData<'_> {
     fn default() -> Self {
         Self {
-            style: LineStyle::Solid,
-            width: 3,
-            color_override: None,
+            xdata: ndarray::ArrayView1::<f64>::from(&[]),
+            top_data: ndarray::ArrayView1::<f64>::from(&[]),
+            bottom_data: ndarray::ArrayView1::<f64>::from(&[]),
         }
     }
 }
+impl FillData for FillBetweenData<'_> {
+    fn top<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.top_data.iter().cloned(),
+        ))
+    }
 
-/// Format for markers drawn at data points.
-#[derive(Clone, Debug)]
-pub(crate) struct Marker {
-    /// The shape of the marker.
-    pub style: MarkerStyle,
-    /// The size of the marker.
-    pub size: u32,
-    /// Optionally overrides the default fill color of the marker.
-    pub color_override: Option<Color>,
-    /// Whether to draw an outline.
-    pub outline: bool,
-    /// Format of an optional outline.
-    pub outline_format: Line,
+    fn bottom<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.bottom_data.iter().cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        self.bottom_data.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn ymax(&self) -> f64 {
+        self.top_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
 }
-impl Default for Marker {
-    fn default() -> Self {
-        Self {
-            style: MarkerStyle::Circle,
-            size: 3,
-            color_override: None,
-            outline: false,
-            outline_format: Line {
-                width: 2,
-                ..Default::default()
-            },
-        }
+impl<'a> FillBetweenData<'a> {
+    /// Main constructor, taking separate array views of x-values and y-values.
+    pub fn new<
+        Xs: Into<ndarray::ArrayView1<'a, f64>>,
+        Ts: Into<ndarray::ArrayView1<'a, f64>>,
+        Bs: Into<ndarray::ArrayView1<'a, f64>>,
+    >(
+        xs: Xs,
+        tops: Ts,
+        bottoms: Bs,
+    ) -> Self {
+        let xdata = xs.into();
+        let top_data = tops.into();
+        let bottom_data = bottoms.into();
+
+        Self { xdata, top_data, bottom_data }
     }
 }
 
@@ -1278,3 +1381,20 @@ pub(crate) trait SeriesData: dyn_clone::DynClone + fmt::Debug {
 }
 
 dyn_clone::clone_trait_object!(SeriesData);
+
+pub(crate) trait FillData: dyn_clone::DynClone + std::fmt::Debug {
+    /// Returns data for the top curve in an [`Iterator`] over x, y pairs.
+    fn top<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
+    /// Returns data for the bottom curve in an [`Iterator`] over x, y pairs.
+    fn bottom<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
+    /// The smallest x-value.
+    fn xmin(&self) -> f64;
+    /// The largest x-value.
+    fn xmax(&self) -> f64;
+    /// The smallest y-value.
+    fn ymin(&self) -> f64;
+    /// The largest y-value.
+    fn ymax(&self) -> f64;
+}
+
+dyn_clone::clone_trait_object!(FillData);
