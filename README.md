@@ -38,6 +38,8 @@ fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
 fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
 ```
 
+![](assets/readme_example.png)
+
 ## Dependencies
 
 The package currently depends on [Cairo](https://www.cairographics.org).
