@@ -128,7 +128,7 @@ pub struct FigureFormat {
 impl Default for FigureFormat {
     fn default() -> Self {
         Self {
-            size: FigSize { width: 6.75, height: 6.75 },
+            size: FigSize { width: 6.75, height: 5.00 },
             dpi: 100,
             face_color: Color::WHITE,
         }
