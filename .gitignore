@@ -7,3 +7,6 @@ Cargo.lock
 
 # ignore swap files
 *.sw[po]
+
+# ignore generated example images
+example.*
