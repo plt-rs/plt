@@ -92,15 +92,15 @@ impl<'a> Subplot<'a> {
     /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
     pub fn fill_between<
         Xs: Into<ndarray::ArrayView1<'a, f64>>,
-        Ts: Into<ndarray::ArrayView1<'a, f64>>,
-        Bs: Into<ndarray::ArrayView1<'a, f64>>,
+        Y1s: Into<ndarray::ArrayView1<'a, f64>>,
+        Y2s: Into<ndarray::ArrayView1<'a, f64>>,
     >(
         &mut self,
         xs: Xs,
-        tops: Ts,
-        bottoms: Bs,
+        y1s: Y1s,
+        y2s: Y2s,
     ) -> Result<(), PltError> {
-        let data = FillBetweenData::new(xs, tops, bottoms);
+        let data = FillBetweenData::new(xs, y1s, y2s);
 
         self.fill_between_desc(FillDescriptor::default(), data);
 
@@ -1305,30 +1305,30 @@ impl StepDataOwned {
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct FillBetweenData<'a> {
     xdata: ndarray::ArrayView1<'a, f64>,
-    top_data: ndarray::ArrayView1<'a, f64>,
-    bottom_data: ndarray::ArrayView1<'a, f64>,
+    y1_data: ndarray::ArrayView1<'a, f64>,
+    y2_data: ndarray::ArrayView1<'a, f64>,
 }
 impl Default for FillBetweenData<'_> {
     fn default() -> Self {
         Self {
             xdata: ndarray::ArrayView1::<f64>::from(&[]),
-            top_data: ndarray::ArrayView1::<f64>::from(&[]),
-            bottom_data: ndarray::ArrayView1::<f64>::from(&[]),
+            y1_data: ndarray::ArrayView1::<f64>::from(&[]),
+            y2_data: ndarray::ArrayView1::<f64>::from(&[]),
         }
     }
 }
 impl FillData for FillBetweenData<'_> {
-    fn top<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
+    fn curve1<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
             self.xdata.iter().cloned(),
-            self.top_data.iter().cloned(),
+            self.y1_data.iter().cloned(),
         ))
     }
 
-    fn bottom<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
+    fn curve2<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
             self.xdata.iter().cloned(),
-            self.bottom_data.iter().cloned(),
+            self.y2_data.iter().cloned(),
         ))
     }
 
@@ -1339,28 +1339,34 @@ impl FillData for FillBetweenData<'_> {
         self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
     }
     fn ymin(&self) -> f64 {
-        self.bottom_data.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+        f64::min(
+            self.y1_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
+            self.y2_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
+        )
     }
     fn ymax(&self) -> f64 {
-        self.top_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+        f64::max(
+            self.y1_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
+            self.y2_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
+        )
     }
 }
 impl<'a> FillBetweenData<'a> {
     /// Main constructor, taking separate array views of x-values and y-values.
     pub fn new<
         Xs: Into<ndarray::ArrayView1<'a, f64>>,
-        Ts: Into<ndarray::ArrayView1<'a, f64>>,
-        Bs: Into<ndarray::ArrayView1<'a, f64>>,
+        Y1s: Into<ndarray::ArrayView1<'a, f64>>,
+        Y2s: Into<ndarray::ArrayView1<'a, f64>>,
     >(
         xs: Xs,
-        tops: Ts,
-        bottoms: Bs,
+        y1s: Y1s,
+        y2s: Y2s,
     ) -> Self {
         let xdata = xs.into();
-        let top_data = tops.into();
-        let bottom_data = bottoms.into();
+        let y1_data = y1s.into();
+        let y2_data = y2s.into();
 
-        Self { xdata, top_data, bottom_data }
+        Self { xdata, y1_data, y2_data }
     }
 }
 
@@ -1383,10 +1389,10 @@ pub(crate) trait SeriesData: dyn_clone::DynClone + fmt::Debug {
 dyn_clone::clone_trait_object!(SeriesData);
 
 pub(crate) trait FillData: dyn_clone::DynClone + std::fmt::Debug {
-    /// Returns data for the top curve in an [`Iterator`] over x, y pairs.
-    fn top<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
-    /// Returns data for the bottom curve in an [`Iterator`] over x, y pairs.
-    fn bottom<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
+    /// Returns data for the first curve in an [`Iterator`] over x, y pairs.
+    fn curve1<'a>(&'a self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'a>;
+    /// Returns data for the second curve in an [`Iterator`] over x, y pairs.
+    fn curve2<'a>(&'a self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'a>;
     /// The smallest x-value.
     fn xmin(&self) -> f64;
     /// The largest x-value.

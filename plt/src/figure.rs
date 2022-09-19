@@ -902,7 +902,7 @@ fn draw_subplot<B: backend::Canvas>(
             }) {
                 canvas.draw_shape(draw::ShapeDescriptor {
                     point,
-                    shape,
+                    shape: shape.clone(),
                     fill_color,
                     line_color,
                     line_width: line.width * scaling.round() as u32,
@@ -920,38 +920,18 @@ fn draw_subplot<B: backend::Canvas>(
         let color = fill_info.color;
         let data = &fill_info.data;
 
-        // draw top
-        canvas.draw_curve(draw::CurveDescriptor {
-            points: data.top()
-                .map(|(x, y)| {
-                    let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
-                    let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+        let shape_points: Vec<_> = Iterator::chain(data.curve1(), data.curve2().rev())
+            .map(|(x, y)| {
+                let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
+                let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
 
-                    let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
-                    draw::Point { x: point.x.round(), y: point.y.round() }
-                })
-                .collect::<Vec<_>>(),
-            //line_color: Color::TRANSPARENT,
-            line_color: color,
-            line_width: 1,
-            dashes: &[],
-            clip_area: Some(plot_area),
-        });
-        // draw bottom
-        canvas.draw_curve(draw::CurveDescriptor {
-            points: data.bottom()
-                .map(|(x, y)| {
-                    let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
-                    let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+                plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac })
+            })
+            .collect();
 
-                    let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
-                    draw::Point { x: point.x.round(), y: point.y.round() }
-                })
-                .collect::<Vec<_>>(),
-            //line_color: Color::TRANSPARENT,
-            line_color: color,
-            line_width: 1,
-            dashes: &[],
+        canvas.fill_region(draw::FillDescriptor {
+            points: shape_points,
+            fill_color: color,
             clip_area: Some(plot_area),
         });
     }

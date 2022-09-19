@@ -332,6 +332,16 @@ impl Default for TextDescriptor {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct FillDescriptor {
+    /// Points the define the region of interest.
+    pub points: Vec<Point>,
+    /// The color of the region.
+    pub fill_color: Color,
+    /// Optionally clip drawing to some area.
+    pub clip_area: Option<Area>,
+}
+
 /// Describes how to save the image to a file.
 #[derive(Clone, Debug)]
 pub struct SaveFileDescriptor<P: AsRef<path::Path>> {
@@ -353,6 +363,8 @@ pub trait Canvas {
     fn draw_line(&mut self, desc: LineDescriptor);
     /// Draws a curve described by a [`CurveDescriptor`].
     fn draw_curve(&mut self, desc: CurveDescriptor);
+    /// Draws color in a closed, arbitrary region described by a [`FillDescriptor`].
+    fn fill_region(&mut self, desc: FillDescriptor);
     /// Draws text described by a [`TextDescriptor`].
     fn draw_text(&mut self, desc: TextDescriptor);
     /// Returns a [`Size`] representing the extent of the text described by a [`TextDescriptor`].
