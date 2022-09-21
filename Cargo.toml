@@ -2,4 +2,5 @@
 members = [
     "plt",
     "plt-draw",
+    "plt-cairo",
 ]

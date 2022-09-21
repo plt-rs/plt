@@ -57,7 +57,8 @@ pub use draw::{Color, FileFormat, FontName};
 // re-export backend canvas in separate module
 /// Re-exports of neccessary plt-draw backend elements.
 pub mod backend {
-    pub use draw::{CairoCanvas, Canvas};
+    pub use draw::Canvas;
+    pub use draw_cairo::CairoCanvas;
 }
 
 /// The error type for this library.
