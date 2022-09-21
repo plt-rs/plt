@@ -10,6 +10,3 @@ keywords = ["plotting", "visualization", "graphics"]
 categories = ["visualization", "graphics"]
 
 [dependencies]
-cairo-rs = { version = "0.15", features = ["png", "svg"] }
-image = "0.24"
-png = "0.17"

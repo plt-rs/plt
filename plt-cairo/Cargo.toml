@@ -1,0 +1,19 @@
+[package]
+name = "plt-cairo"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonah Hoffman <jhh451@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/plt-rs/plt"
+description = "The cairo drawing backend template for the plt crate"
+keywords = ["cairo", "plotting", "visualization", "graphics"]
+categories = ["visualization", "graphics"]
+
+[dependencies]
+cairo-rs = { version = "0.15", features = ["png", "svg"] }
+png = "0.17"
+
+[dependencies.draw]
+package = "plt-draw"
+path = "../plt-draw"
+version = "0.3.0"
