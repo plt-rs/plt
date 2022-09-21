@@ -88,6 +88,7 @@ impl draw::Canvas for CairoCanvas {
                     w as f64,
                     h as f64,
                 );
+                self.context.close_path();
             },
             draw::Shape::Square { l } => {
                 self.context.rectangle(
@@ -106,6 +107,7 @@ impl draw::Canvas for CairoCanvas {
                     0.0,
                     2.0 * f64::consts::PI,
                 );
+                self.context.close_path();
             },
         };
 
@@ -193,6 +195,35 @@ impl draw::Canvas for CairoCanvas {
         }
 
         self.context.stroke().unwrap();
+
+        self.reset_clip();
+
+        self.context.restore().unwrap();
+    }
+
+    fn fill_region(&mut self, desc: draw::FillDescriptor) {
+        self.context.save().unwrap();
+
+        if let Some(area) = desc.clip_area {
+            self.clip_area(area);
+        }
+
+        self.context.set_source_rgba(
+            desc.fill_color.r,
+            desc.fill_color.g,
+            desc.fill_color.b,
+            desc.fill_color.a,
+        );
+
+        for point in desc.points {
+            let point = CairoPoint::from_point(point, self.size);
+
+            self.context.line_to(point.x, point.y);
+        }
+
+        self.context.close_path();
+
+        self.context.fill().unwrap();
 
         self.reset_clip();
 
