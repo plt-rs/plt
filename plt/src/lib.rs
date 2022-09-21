@@ -52,7 +52,13 @@ pub use layout::*;
 pub use subplot::*;
 
 // re-export necessary elements from plt-draw
-pub use draw::{CairoCanvas as CairoBackend, Canvas as Backend, Color, FileFormat, FontName};
+pub use draw::{Color, FileFormat, FontName};
+
+// re-export backend canvas in separate module
+/// Re-exports of neccessary plt-draw backend elements.
+pub mod backend {
+    pub use draw::{CairoCanvas, Canvas};
+}
 
 /// The error type for this library.
 #[derive(thiserror::Error, Debug)]

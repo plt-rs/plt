@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### plt
 
+- Moved some plt-draw re-exports to separate submodule.
 - Changed default configuration for `Subplot` to include major and minor ticks on all axes.
 - Removed `Subplot::builder_detailed`.
 - Removed `Line` and `Marker` from public API.

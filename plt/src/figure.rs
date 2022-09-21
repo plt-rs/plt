@@ -1,15 +1,16 @@
+use crate::backend;
 use crate::layout::{FractionalArea, Layout};
 use crate::subplot::{
     AxisType, Grid, Line, LineStyle, MarkerStyle, Subplot, TickDirection, TickLabels, TickSpacing,
 };
-use crate::{Backend, CairoBackend, Color, FileFormat, PltError};
+use crate::{Color, FileFormat, PltError};
 
 use std::collections::HashMap;
 use std::{iter, ops, path};
 
 /// Represents a whole figure, containing subplots, which can be drawn as an image.
 #[derive(Debug)]
-pub struct Figure<'a, B: Backend = CairoBackend> {
+pub struct Figure<'a, B: backend::Canvas = backend::CairoCanvas> {
     subplots: Vec<Subplot<'a>>,
     subplot_areas: Vec<draw::Area>,
     size: draw::Size,
@@ -18,7 +19,7 @@ pub struct Figure<'a, B: Backend = CairoBackend> {
     face_color: Color,
     phantom: std::marker::PhantomData<B>,
 }
-impl<'a, B: Backend> Figure<'a, B> {
+impl<'a, B: backend::Canvas> Figure<'a, B> {
     /// The main constructor.
     pub fn new(format: &FigureFormat) -> Self {
         // scaling factor for different DPIs
@@ -109,7 +110,7 @@ impl<'a, B: Backend> Figure<'a, B> {
         &mut self.subplots
     }
 }
-impl<'a, B: Backend> Default for Figure<'a, B> {
+impl<'a, B: backend::Canvas> Default for Figure<'a, B> {
     fn default() -> Self {
         Self::new(&FigureFormat::default())
     }
@@ -358,7 +359,7 @@ fn ticks_to_labels(ticks: &[f64], modifiers: (f64, i32, usize)) -> Result<Vec<St
     Ok(labels)
 }
 
-fn draw_subplot<B: Backend>(
+fn draw_subplot<B: backend::Canvas>(
     canvas: &mut B,
     subplot: &Subplot,
     subplot_area: &draw::Area,
