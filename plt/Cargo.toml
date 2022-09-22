@@ -9,6 +9,14 @@ description = "Plotting library with a focus on publication level aesthetics and
 keywords = ["plot", "graph", "plotting", "visualization"]
 categories = ["visualization", "graphics"]
 
+[features]
+default = ["cairo", "png", "svg"]
+# backend features
+cairo = ["dep:draw-cairo"]
+# file format features
+png = ["draw-cairo?/png"]
+svg = ["draw-cairo?/svg"]
+
 [dependencies]
 dyn-clone = "1.0"
 ndarray = "0.15"
@@ -19,10 +27,12 @@ package = "plt-draw"
 path = "../plt-draw"
 version = "0.3.0"
 
-[dependencies.draw_cairo]
+[dependencies.draw-cairo]
 package = "plt-cairo"
 path = "../plt-cairo"
 version = "0.1.0"
+default-features = false
+optional = true
 
 [dev-dependencies]
 rand = "0.8"

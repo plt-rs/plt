@@ -21,9 +21,7 @@ impl CairoCanvas {
 }
 impl draw::Canvas for CairoCanvas {
     fn new(desc: draw::CanvasDescriptor) -> Self {
-        let mut temp_file = None;
-
-        let context = match desc.graphics_type {
+        let (context, temp_file) = match desc.graphics_type {
             draw::ImageFormat::Bitmap => {
                 let surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
@@ -32,21 +30,27 @@ impl draw::Canvas for CairoCanvas {
                 )
                 .unwrap();
 
-                cairo::Context::new(&surface).unwrap()
+                (cairo::Context::new(&surface).unwrap(), None)
             },
             draw::ImageFormat::Svg => {
-                let mut temp_filename = std::env::temp_dir();
-                temp_filename.push("plt_temp.svg");
-                temp_file = Some(temp_filename);
+                #[cfg(feature = "svg")]
+                {
+                    let mut temp_filename = std::env::temp_dir();
+                    temp_filename.push("plt_temp.svg");
+                    let temp_file = Some(temp_filename);
 
-                let surface = cairo::SvgSurface::new(
-                    desc.size.width.into(),
-                    desc.size.height.into(),
-                    temp_file.as_ref(),
-                )
-                .unwrap();
+                    let surface = cairo::SvgSurface::new(
+                        desc.size.width.into(),
+                        desc.size.height.into(),
+                        temp_file.as_ref(),
+                    )
+                    .unwrap();
 
-                cairo::Context::new(&surface).unwrap()
+                    (cairo::Context::new(&surface).unwrap(), temp_file)
+                }
+
+                #[cfg(not(feature = "svg"))]
+                panic!("svg feature is not enabled");
             },
         };
 
@@ -268,6 +272,7 @@ impl draw::Canvas for CairoCanvas {
         match self.graphics_type {
             draw::ImageFormat::Bitmap => {
                 match desc.format {
+                    #[cfg(feature = "png")]
                     draw::FileFormat::Png => {
                         // temporarily remove surface from context
                         let mut surface = cairo::ImageSurface::try_from(
@@ -325,12 +330,17 @@ impl draw::Canvas for CairoCanvas {
                         // return surface to self
                         self.context = cairo::Context::new(&surface).unwrap();
                     },
+                    #[cfg(not(feature = "png"))]
+                    draw::FileFormat::Png => {
+                        panic!("png feature not enabled");
+                    },
                     _ => {
                         panic!("unsupported filetype for bitmap canvas");
                     },
                 }
             },
             draw::ImageFormat::Svg => {
+                #[cfg(feature = "svg")]
                 match desc.format {
                     draw::FileFormat::Svg => {
                         // finish writing file
@@ -349,9 +359,12 @@ impl draw::Canvas for CairoCanvas {
                         }
                     },
                     _ => {
-                        panic!("unsupported filetype for vector canvas");
+                        panic!("unsupported filetype for svg canvas");
                     },
                 }
+
+                #[cfg(not(feature = "svg"))]
+                panic!("svg feature is not enabled");
             },
         };
     }

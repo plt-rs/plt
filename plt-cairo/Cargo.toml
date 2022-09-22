@@ -9,9 +9,14 @@ description = "The cairo drawing backend template for the plt crate"
 keywords = ["cairo", "plotting", "visualization", "graphics"]
 categories = ["visualization", "graphics"]
 
+[features]
+default = ["png", "svg"]
+png = ["dep:png", "cairo-rs/png"]
+svg = ["cairo-rs/svg"]
+
 [dependencies]
-cairo-rs = { version = "0.15", features = ["png", "svg"] }
-png = "0.17"
+cairo-rs = { version = "0.15" }
+png = { version = "0.17", optional = true }
 
 [dependencies.draw]
 package = "plt-draw"
