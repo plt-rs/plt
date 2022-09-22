@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PlotDescriptor` no longer holds data, data is passed separately.
 - Changed doc / readme example to use `Vec` instead of `ndarray::Array1`.
 
+### Added
+
+- `fill_between` functionality.
+
 ## [0.3.1] - 2022-09-09
 
 ### Added
