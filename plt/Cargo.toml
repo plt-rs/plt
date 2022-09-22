@@ -10,9 +10,9 @@ keywords = ["plot", "graph", "plotting", "visualization"]
 categories = ["visualization", "graphics"]
 
 [dependencies]
-thiserror = "1.0"
 dyn-clone = "1.0"
 ndarray = "0.15"
+thiserror = "1.0"
 
 [dependencies.draw]
 package = "plt-draw"
