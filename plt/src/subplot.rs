@@ -1,6 +1,6 @@
 use crate::{Color, FontName, PltError};
 
-use std::{f64, iter};
+use std::{array, fmt, f64, iter};
 
 /// The object that represents a whole subplot and is used to draw plotted data.
 #[derive(Clone, Debug)]
@@ -907,7 +907,7 @@ pub(crate) enum AxisType {
     SecondaryY,
 }
 impl AxisType {
-    pub(crate) fn iter() -> std::array::IntoIter<Self, 4> {
+    pub(crate) fn iter() -> array::IntoIter<Self, 4> {
         [Self::X, Self::Y, Self::SecondaryX, Self::SecondaryY].into_iter()
     }
 }
@@ -1189,7 +1189,7 @@ impl Default for Marker {
 // traits
 
 /// Implemented for data that can be represented by pairs of floats to be plotted.
-pub(crate) trait SeriesData: dyn_clone::DynClone + std::fmt::Debug {
+pub(crate) trait SeriesData: dyn_clone::DynClone + fmt::Debug {
     /// Returns data in an [`Iterator`] over x, y pairs.
     fn data<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
     /// The smallest x-value.

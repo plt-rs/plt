@@ -1,4 +1,4 @@
-use std::{fs, path};
+use std::{env, fs, f64, io, path};
 
 /// The Cairo backend for `plt`.
 #[derive(Debug)]
@@ -35,7 +35,7 @@ impl draw::Canvas for CairoCanvas {
             draw::ImageFormat::Svg => {
                 #[cfg(feature = "svg")]
                 {
-                    let mut temp_filename = std::env::temp_dir();
+                    let mut temp_filename = env::temp_dir();
                     temp_filename.push("plt_temp.svg");
                     let temp_file = Some(temp_filename);
 
@@ -104,7 +104,7 @@ impl draw::Canvas for CairoCanvas {
                     origin.y,
                     r as f64,
                     0.0,
-                    2.0 * std::f64::consts::PI,
+                    2.0 * f64::consts::PI,
                 );
             },
         };
@@ -288,7 +288,7 @@ impl draw::Canvas for CairoCanvas {
                         self.context = cairo::Context::new(&blank_surface).unwrap();
 
                         let file = fs::File::create(desc.filename).unwrap();
-                        let w = &mut std::io::BufWriter::new(file);
+                        let w = &mut io::BufWriter::new(file);
 
                         // configure encoder
                         let mut encoder = png::Encoder::new(
@@ -352,10 +352,10 @@ impl draw::Canvas for CairoCanvas {
 
                         if let Some(temp_file) = &self.temp_file {
                             // copy temp file to new specified location
-                            std::fs::copy(temp_file, desc.filename.as_ref()).unwrap();
+                            fs::copy(temp_file, desc.filename.as_ref()).unwrap();
 
                             // remove temp file
-                            std::fs::remove_file(temp_file).unwrap();
+                            fs::remove_file(temp_file).unwrap();
                         }
                     },
                     _ => {

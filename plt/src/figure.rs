@@ -6,7 +6,7 @@ use crate::subplot::{
 use crate::{Color, FileFormat, PltError};
 
 use std::collections::HashMap;
-use std::{iter, ops, path};
+use std::{f64, iter, marker, ops, path};
 
 /// Represents a whole figure, containing subplots, which can be drawn as an image.
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct Figure<'a, B: backend::Canvas = backend::CairoCanvas> {
     scaling: f32,
     dpi: u16,
     face_color: Color,
-    phantom: std::marker::PhantomData<B>,
+    phantom: marker::PhantomData<B>,
 }
 impl<'a, B: backend::Canvas> Figure<'a, B> {
     /// The main constructor.
@@ -36,7 +36,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
             scaling,
             dpi: format.dpi,
             face_color: format.face_color,
-            phantom: std::marker::PhantomData,
+            phantom: marker::PhantomData,
         }
     }
 
@@ -1041,7 +1041,7 @@ fn draw_subplot<B: backend::Canvas>(
                     y: (plot_area.ymax + plot_area.ymin) as f64 / 2.0,
                 },
                 alignment: draw::Alignment::Right,
-                rotation: 1.5 * std::f64::consts::PI,
+                rotation: 1.5 * f64::consts::PI,
                 color: font_color,
                 font: label_font,
                 ..Default::default()
@@ -1065,7 +1065,7 @@ fn draw_subplot<B: backend::Canvas>(
                     y: (plot_area.ymax + plot_area.ymin) as f64 / 2.0,
                 },
                 alignment: draw::Alignment::Left,
-                rotation: 0.5 * std::f64::consts::PI,
+                rotation: 0.5 * f64::consts::PI,
                 color: font_color,
                 font: label_font,
                 ..Default::default()
