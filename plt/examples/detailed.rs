@@ -6,6 +6,8 @@ fn main() {
     let line_ys = xs.iter()
         .map(|x: &f64| x.powi(3))
         .collect::<ndarray::Array1<_>>();
+    let upper_errors: Vec<f64> = line_ys.iter().map(|y| 1.1 * y).collect();
+    let lower_errors: Vec<f64> = line_ys.iter().map(|y| 0.9 * y).collect();
 
     // create randomized scatter data
     let dist = Normal::new(0.0, 0.1).unwrap();
@@ -27,6 +29,14 @@ fn main() {
         .ygrid(plt::Grid::Major)
         .build();
 
+    // plot true line
+    subplot.fill_between(&xs, &upper_errors, &lower_errors).unwrap();
+    subplot.plotter()
+        .line(Some(plt::LineStyle::Dashed))
+        .label("true curve")
+        .plot(&xs, &line_ys)
+        .unwrap();
+
     // plot scatter points
     subplot.plotter()
         .line(None)
@@ -36,13 +46,6 @@ fn main() {
         .marker_outline_color(plt::Color::BLACK)
         .label("data")
         .plot(&xs, &scatter_ys)
-        .unwrap();
-
-    // plot true line
-    subplot.plotter()
-        .line(Some(plt::LineStyle::Dashed))
-        .label("true curve")
-        .plot(&xs, &line_ys)
         .unwrap();
 
     // make figure and add subplot

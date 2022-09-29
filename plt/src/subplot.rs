@@ -6,6 +6,7 @@ use std::{array, fmt, f64, iter};
 #[derive(Clone, Debug)]
 pub struct Subplot<'a> {
     pub(crate) format: SubplotFormat,
+    pub(crate) plot_order: Vec<PlotType>,
     pub(crate) plot_infos: Vec<PlotInfo<'a>>,
     pub(crate) fill_infos: Vec<FillInfo<'a>>,
     pub(crate) title: String,
@@ -25,6 +26,14 @@ impl<'a> Subplot<'a> {
         Plotter {
             subplot: self,
             desc: PlotDescriptor::default(),
+        }
+    }
+
+    /// Returns a [`Filler`] for filling a region of the subplot with a color.
+    pub fn filler<'b>(&'b mut self) -> Filler<'a, 'b> {
+        Filler {
+            subplot: self,
+            desc: FillDescriptor::default(),
         }
     }
 
@@ -100,11 +109,32 @@ impl<'a> Subplot<'a> {
         y1s: Y1s,
         y2s: Y2s,
     ) -> Result<(), PltError> {
-        let data = FillBetweenData::new(xs, y1s, y2s);
+        let filler = Filler {
+            subplot: self,
+            desc: FillDescriptor::default(),
+        };
 
-        self.fill_between_desc(FillDescriptor::default(), data);
+        filler.fill_between(xs, y1s, y2s)
+    }
 
-        Ok(())
+    /// Fills an area between two curves on the subplot with default formatting.
+    /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
+    pub fn fill_between_owned<
+        Xs: Into<ndarray::Array1<f64>>,
+        Y1s: Into<ndarray::Array1<f64>>,
+        Y2s: Into<ndarray::Array1<f64>>,
+    >(
+        &mut self,
+        xs: Xs,
+        y1s: Y1s,
+        y2s: Y2s,
+    ) -> Result<(), PltError> {
+        let filler = Filler {
+            subplot: self,
+            desc: FillDescriptor::default(),
+        };
+
+        filler.fill_between_owned(xs, y1s, y2s)
     }
 
     /// Returns the format of this plot.
@@ -117,6 +147,7 @@ impl<'a> Subplot<'a> {
     pub(crate) fn new(desc: &SubplotDescriptor) -> Self {
         Self {
             format: desc.format.clone(),
+            plot_order: vec![],
             plot_infos: vec![],
             fill_infos: vec![],
             title: desc.title.to_string(),
@@ -200,6 +231,7 @@ impl<'a> Subplot<'a> {
             yaxis: desc.yaxis,
             pixel_perfect: false,
         });
+        self.plot_order.push(PlotType::Series);
     }
 
     /// Internal fill between setup function.
@@ -257,10 +289,11 @@ impl<'a> Subplot<'a> {
         self.fill_infos.push(FillInfo {
             label: desc.label.to_string(),
             data: Box::new(data),
-            color: desc.color,
+            color_override: desc.color_override,
             xaxis: desc.xaxis,
             yaxis: desc.yaxis,
         });
+        self.plot_order.push(PlotType::Fill);
     }
 }
 
@@ -472,6 +505,8 @@ impl<'a> SubplotBuilder<'a> {
 pub struct SubplotFormat {
     /// The color used for plotted markers and lines, when there the color cycle is empty.
     pub default_marker_color: Color,
+    /// The color used for filling regions, when there the color cycle is empty.
+    pub default_fill_color: Color,
     /// The background color of the plotting area.
     pub plot_color: Color,
     /// The default width of all nonplot lines in the subplot.
@@ -510,6 +545,7 @@ impl SubplotFormat {
 
         Self {
             default_marker_color: line_color,
+            default_fill_color: Color { r: 1.0, g: 0.0, b: 0.0, a: 0.5 },
             plot_color: Color { r: 0.157, g: 0.157, b: 0.157, a: 1.0 },
             grid_color: Color { r: 0.250, g: 0.250, b: 0.250, a: 1.0 },
             line_width: 2,
@@ -536,6 +572,7 @@ impl Default for SubplotFormat {
 
         Self {
             default_marker_color: Color::BLACK,
+            default_fill_color: Color { r: 1.0, g: 0.0, b: 0.0, a: 0.5 },
             plot_color: Color::TRANSPARENT,
             line_width: 2,
             line_color: Color::BLACK,
@@ -829,6 +866,79 @@ impl<'a, 'b> Plotter<'a, 'b> {
     }
 }
 
+/// Fills a region of a subplot with a color.
+pub struct Filler<'a, 'b> {
+    subplot: &'b mut Subplot<'a>,
+    desc: FillDescriptor,
+}
+impl<'a, 'b> Filler<'a, 'b> {
+    /// Fills an area between two curves on the subplot.
+    pub fn fill_between<
+        Xs: Into<ndarray::ArrayView1<'a, f64>>,
+        Y1s: Into<ndarray::ArrayView1<'a, f64>>,
+        Y2s: Into<ndarray::ArrayView1<'a, f64>>,
+    >(
+        self,
+        xs: Xs,
+        y1s: Y1s,
+        y2s: Y2s,
+    ) -> Result<(), PltError> {
+        let data = FillBetweenData::new(xs, y1s, y2s);
+
+        self.subplot.fill_between_desc(self.desc, data);
+
+        Ok(())
+    }
+
+    /// Fills an area between two curves on the subplot.
+    pub fn fill_between_owned<
+        Xs: Into<ndarray::Array1<f64>>,
+        Y1s: Into<ndarray::Array1<f64>>,
+        Y2s: Into<ndarray::Array1<f64>>,
+    >(
+        self,
+        xs: Xs,
+        y1s: Y1s,
+        y2s: Y2s,
+    ) -> Result<(), PltError> {
+        let data = FillBetweenDataOwned::new(xs, y1s, y2s);
+
+        self.subplot.fill_between_desc(FillDescriptor::default(), data);
+
+        Ok(())
+    }
+
+    /// Uses the secondary X-Axis to reference x-data.
+    pub fn use_secondary_xaxis(mut self) -> Self {
+        self.desc.xaxis = AxisType::SecondaryX;
+
+        self
+    }
+
+    /// Uses the secondary Y-Axis to reference y-data.
+    pub fn use_secondary_yaxis(mut self) -> Self {
+        self.desc.yaxis = AxisType::SecondaryY;
+
+        self
+    }
+
+    /// Labels the data for use in a legend.
+    pub fn label<S: AsRef<str>>(mut self, label: S) -> Self {
+        self.desc.label = label.as_ref().to_string();
+
+        self
+    }
+
+    /// Overrides the default fill color.
+    /// By default, line colors are determined by cycling through [`SubplotFormat::color_cycle`]
+    /// with an alpha value of 0.5.
+    pub fn color(mut self, color: Color) -> Self {
+        self.desc.color_override = Some(color);
+
+        self
+    }
+}
+
 /// Plotting line styles.
 #[derive(Copy, Clone, Debug)]
 pub enum LineStyle {
@@ -924,6 +1034,13 @@ impl Default for SubplotDescriptor<'_> {
     }
 }
 
+/// Represents different plottable dataset types.
+#[derive(Copy, Clone, Debug)]
+pub(crate) enum PlotType {
+    Series,
+    Fill,
+}
+
 /// Describes data and how it should be plotted.
 #[derive(Clone, Debug)]
 pub(crate) struct PlotDescriptor {
@@ -962,7 +1079,7 @@ pub(crate) struct FillDescriptor {
     /// The label corresponding to this data, displayed in a legend.
     pub label: String,
     /// The color to fill the area with.
-    pub color: Color,
+    pub color_override: Option<Color>,
     /// Which axis to use as the x-axis.
     pub xaxis: AxisType,
     /// Which axis to use as the y-axis.
@@ -972,7 +1089,7 @@ impl Default for FillDescriptor {
     fn default() -> Self {
         Self {
             label: String::new(),
-            color: Color { r: 1.0, g: 0.0, b: 0.0, a: 0.5 },
+            color_override: None,
             xaxis: AxisType::X,
             yaxis: AxisType::Y,
         }
@@ -1102,7 +1219,7 @@ pub(crate) struct FillInfo<'a> {
     #[allow(dead_code)]
     pub label: String,
     pub data: Box<dyn FillData + 'a>,
-    pub color: Color,
+    pub color_override: Option<Color>,
     pub xaxis: AxisType,
     pub yaxis: AxisType,
 }
@@ -1357,6 +1474,75 @@ impl<'a> FillBetweenData<'a> {
         Xs: Into<ndarray::ArrayView1<'a, f64>>,
         Y1s: Into<ndarray::ArrayView1<'a, f64>>,
         Y2s: Into<ndarray::ArrayView1<'a, f64>>,
+    >(
+        xs: Xs,
+        y1s: Y1s,
+        y2s: Y2s,
+    ) -> Self {
+        let xdata = xs.into();
+        let y1_data = y1s.into();
+        let y2_data = y2s.into();
+
+        Self { xdata, y1_data, y2_data }
+    }
+}
+
+/// Holds owned data describing an area to be filled.
+#[derive(Clone, Debug)]
+pub(crate) struct FillBetweenDataOwned {
+    xdata: ndarray::Array1<f64>,
+    y1_data: ndarray::Array1<f64>,
+    y2_data: ndarray::Array1<f64>,
+}
+impl Default for FillBetweenDataOwned {
+    fn default() -> Self {
+        Self {
+            xdata: ndarray::Array1::<f64>::default(0),
+            y1_data: ndarray::Array1::<f64>::default(0),
+            y2_data: ndarray::Array1::<f64>::default(0),
+        }
+    }
+}
+impl FillData for FillBetweenDataOwned {
+    fn curve1<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.y1_data.iter().cloned(),
+        ))
+    }
+
+    fn curve2<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
+        Box::new(iter::zip(
+            self.xdata.iter().cloned(),
+            self.y2_data.iter().cloned(),
+        ))
+    }
+
+    fn xmin(&self) -> f64 {
+        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    }
+    fn xmax(&self) -> f64 {
+        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+    }
+    fn ymin(&self) -> f64 {
+        f64::min(
+            self.y1_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
+            self.y2_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
+        )
+    }
+    fn ymax(&self) -> f64 {
+        f64::max(
+            self.y1_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
+            self.y2_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
+        )
+    }
+}
+impl FillBetweenDataOwned {
+    /// Main constructor, taking separate array views of x-values and y-values.
+    pub fn new<
+        Xs: Into<ndarray::Array1<f64>>,
+        Y1s: Into<ndarray::Array1<f64>>,
+        Y2s: Into<ndarray::Array1<f64>>,
     >(
         xs: Xs,
         y1s: Y1s,

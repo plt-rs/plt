@@ -380,6 +380,7 @@ fn draw_subplot<B: backend::Canvas>(
 
     // colors
     let default_marker_color = subplot.format.default_marker_color;
+    let default_fill_color = subplot.format.default_fill_color;
 
     // major tick formatting
     let inner_major_tick_length = match subplot.format.tick_direction {
@@ -788,9 +789,12 @@ fn draw_subplot<B: backend::Canvas>(
         }
     }
 
-    // draw data curve
+    // draw data
 
-    // if there is a color cycle, default to those colors, otherwise default to black
+    let mut plot_info_iter = subplot.plot_infos.iter();
+    let mut fill_info_iter = subplot.fill_infos.iter();
+
+    // if there is a color cycle, default to those colors, otherwise default to black for series
     let default_color = if !subplot.format.color_cycle.is_empty() {
         subplot.format.color_cycle.clone()
     } else {
@@ -798,143 +802,171 @@ fn draw_subplot<B: backend::Canvas>(
     };
     let mut default_color = default_color.iter().cycle();
 
-    // draw each plot
-    for plot_info in subplot.plot_infos.iter() {
-        let xlim = finalized_axes[&plot_info.xaxis].limits;
-        let ylim = finalized_axes[&plot_info.yaxis].limits;
-        let plot_data = &plot_info.data;
+    // if there is a color cycle, default to those colors, otherwise default to red for fill
+    let default_fill_color = if !subplot.format.color_cycle.is_empty() {
+        subplot.format.color_cycle.iter().map(|&c| Color { a: 0.5, ..c }).collect()
+    } else {
+        vec![default_fill_color]
+    };
+    let mut default_fill_color = default_fill_color.iter().cycle();
 
-        // draw line
-        if let Some(line) = plot_info.line {
-            let line_color = if let Some(color) = line.color_override {
-                color
-            } else {
-                *default_color.next().unwrap()
-            };
-            let dashes = match line.style {
-                LineStyle::Solid => vec![],
-                LineStyle::Dashed => vec![
-                    (10.0 * scaling).into(),
-                    (10.0 * scaling).into(),
-                    (10.0 * scaling).into(),
-                    (10.0 * scaling).into(),
-                ],
-                LineStyle::ShortDashed => vec![
-                    (4.0 * scaling).into(),
-                    (4.0 * scaling).into(),
-                    (4.0 * scaling).into(),
-                    (4.0 * scaling).into(),
-                ],
-            };
-            canvas.draw_curve(draw::CurveDescriptor {
-                points: plot_data.data()
-                    .map(|(x, y)| {
-                        let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
-                        let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+    // draw all data sets in the order called
+    for plot_type in subplot.plot_order.iter() { match plot_type {
+        // draw series data
+        crate::subplot::PlotType::Series => {
+            let plot_info = plot_info_iter.next().unwrap();
 
-                        let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
-                        if plot_info.pixel_perfect {
-                            draw::Point { x: point.x.round(), y: point.y.round() }
-                        } else {
-                            point
-                        }
-                    })
-                    .collect::<Vec<_>>(),
-                line_color,
-                line_width: line.width * scaling.round() as u32,
-                dashes: dashes.as_slice(),
-                clip_area: Some(plot_area),
-            });
-        }
+            let xlim = finalized_axes[&plot_info.xaxis].limits;
+            let ylim = finalized_axes[&plot_info.yaxis].limits;
+            let plot_data = &plot_info.data;
 
-        // draw markers
-        if let Some(marker) = &plot_info.marker {
-            let mut shape = match marker.style {
-                MarkerStyle::Circle => draw::Shape::Circle { r: marker.size },
-                MarkerStyle::Square => draw::Shape::Square { l: marker.size },
-            };
-            shape.scale(scaling.round() as u32);
-            let fill_color = if let Some(color) = marker.color_override {
-                color
-            } else {
-                *default_color.next().unwrap()
-            };
-            let line = if marker.outline {
-                marker.outline_format
-            } else {
-                Line {
-                    style: LineStyle::Solid,
-                    width: Line::default().width,
-                    color_override: Some(Color::TRANSPARENT),
-                }
-            };
-            let line_color = if let Some(color) = line.color_override {
-                color
-            } else {
-                fill_color
-            };
-            let line_dashes = match line.style {
-                LineStyle::Solid => vec![],
-                LineStyle::Dashed => vec![
-                    (10.0 * scaling).into(),
-                    (10.0 * scaling).into(),
-                    (10.0 * scaling).into(),
-                    (10.0 * scaling).into(),
-                ],
-                LineStyle::ShortDashed => vec![
-                    (4.0 * scaling).into(),
-                    (4.0 * scaling).into(),
-                    (4.0 * scaling).into(),
-                    (4.0 * scaling).into(),
-                ],
-            };
-            for point in plot_data.data().map(|(x, y)| {
-                let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
-                let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
-
-                let point = plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac });
-
-                if plot_info.pixel_perfect {
-                    draw::Point { x: point.x.round(), y: point.y.round() }
+            // draw line
+            if let Some(line) = plot_info.line {
+                let line_color = if let Some(color) = line.color_override {
+                    color
                 } else {
-                    point
-                }
-            }) {
-                canvas.draw_shape(draw::ShapeDescriptor {
-                    point,
-                    shape: shape.clone(),
-                    fill_color,
+                    *default_color.next().unwrap()
+                };
+                let dashes = match line.style {
+                    LineStyle::Solid => vec![],
+                    LineStyle::Dashed => vec![
+                        (10.0 * scaling).into(),
+                        (10.0 * scaling).into(),
+                        (10.0 * scaling).into(),
+                        (10.0 * scaling).into(),
+                    ],
+                    LineStyle::ShortDashed => vec![
+                        (4.0 * scaling).into(),
+                        (4.0 * scaling).into(),
+                        (4.0 * scaling).into(),
+                        (4.0 * scaling).into(),
+                    ],
+                };
+                canvas.draw_curve(draw::CurveDescriptor {
+                    points: plot_data.data()
+                        .map(|(x, y)| {
+                            let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
+                            let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+
+                            let point = plot_area.fractional_to_point(draw::Point {
+                                x: xfrac,
+                                y: yfrac,
+                            });
+                            if plot_info.pixel_perfect {
+                                draw::Point { x: point.x.round(), y: point.y.round() }
+                            } else {
+                                point
+                            }
+                        })
+                        .collect::<Vec<_>>(),
                     line_color,
                     line_width: line.width * scaling.round() as u32,
-                    line_dashes: line_dashes.as_slice(),
+                    dashes: dashes.as_slice(),
                     clip_area: Some(plot_area),
                 });
             }
+
+            // draw markers
+            if let Some(marker) = &plot_info.marker {
+                let mut shape = match marker.style {
+                    MarkerStyle::Circle => draw::Shape::Circle { r: marker.size },
+                    MarkerStyle::Square => draw::Shape::Square { l: marker.size },
+                };
+                shape.scale(scaling.round() as u32);
+                let fill_color = if let Some(color) = marker.color_override {
+                    color
+                } else {
+                    *default_color.next().unwrap()
+                };
+                let line = if marker.outline {
+                    marker.outline_format
+                } else {
+                    Line {
+                        style: LineStyle::Solid,
+                        width: Line::default().width,
+                        color_override: Some(Color::TRANSPARENT),
+                    }
+                };
+                let line_color = if let Some(color) = line.color_override {
+                    color
+                } else {
+                    fill_color
+                };
+                let line_dashes = match line.style {
+                    LineStyle::Solid => vec![],
+                    LineStyle::Dashed => vec![
+                        (10.0 * scaling).into(),
+                        (10.0 * scaling).into(),
+                        (10.0 * scaling).into(),
+                        (10.0 * scaling).into(),
+                    ],
+                    LineStyle::ShortDashed => vec![
+                        (4.0 * scaling).into(),
+                        (4.0 * scaling).into(),
+                        (4.0 * scaling).into(),
+                        (4.0 * scaling).into(),
+                    ],
+                };
+                for point in plot_data.data().map(|(x, y)| {
+                    let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
+                    let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+
+                    let point = plot_area.fractional_to_point(draw::Point {
+                        x: xfrac,
+                        y: yfrac,
+                    });
+
+                    if plot_info.pixel_perfect {
+                        draw::Point { x: point.x.round(), y: point.y.round() }
+                    } else {
+                        point
+                    }
+                }) {
+                    canvas.draw_shape(draw::ShapeDescriptor {
+                        point,
+                        shape: shape.clone(),
+                        fill_color,
+                        line_color,
+                        line_width: line.width * scaling.round() as u32,
+                        line_dashes: line_dashes.as_slice(),
+                        clip_area: Some(plot_area),
+                    });
+                }
+            }
         }
-    }
+        // draw fill data
+        crate::subplot::PlotType::Fill => {
+            let fill_info = fill_info_iter.next().unwrap();
 
-    // fill each fill_between area
-    for fill_info in subplot.fill_infos.iter() {
-        let xlim = finalized_axes[&fill_info.xaxis].limits;
-        let ylim = finalized_axes[&fill_info.yaxis].limits;
-        let color = fill_info.color;
-        let data = &fill_info.data;
+            let xlim = finalized_axes[&fill_info.xaxis].limits;
+            let ylim = finalized_axes[&fill_info.yaxis].limits;
+            //let color = fill_info.color;
+            let color = if let Some(color) = fill_info.color_override {
+                color
+            } else {
+                *default_fill_color.next().unwrap()
+            };
+            let data = &fill_info.data;
 
-        let shape_points: Vec<_> = Iterator::chain(data.curve1(), data.curve2().rev())
-            .map(|(x, y)| {
-                let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
-                let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
+            let shape_points: Vec<_> = Iterator::chain(data.curve1(), data.curve2().rev())
+                .map(|(x, y)| {
+                    let xfrac = (x - xlim.0) / (xlim.1 - xlim.0);
+                    let yfrac = (y - ylim.0) / (ylim.1 - ylim.0);
 
-                plot_area.fractional_to_point(draw::Point { x: xfrac, y: yfrac })
-            })
-            .collect();
+                    plot_area.fractional_to_point(draw::Point {
+                        x: xfrac,
+                        y: yfrac,
+                    })
+                })
+                .collect();
 
-        canvas.fill_region(draw::FillDescriptor {
-            points: shape_points,
-            fill_color: color,
-            clip_area: Some(plot_area),
-        });
-    }
+            canvas.fill_region(draw::FillDescriptor {
+                points: shape_points,
+                fill_color: color,
+                clip_area: Some(plot_area),
+            });
+        }
+    }}
 
     // draw axis lines, labels, ticks, and tick labels for each axis
     for (placement, axis) in finalized_axes {
