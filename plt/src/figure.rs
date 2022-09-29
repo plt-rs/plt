@@ -924,7 +924,7 @@ fn draw_subplot<B: backend::Canvas>(
                 }) {
                     canvas.draw_shape(draw::ShapeDescriptor {
                         point,
-                        shape: shape.clone(),
+                        shape,
                         fill_color,
                         line_color,
                         line_width: line.width * scaling.round() as u32,
