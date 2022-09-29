@@ -332,6 +332,7 @@ impl Default for TextDescriptor {
     }
 }
 
+/// Describes a region to be filled with a specified color.
 #[derive(Clone, Debug)]
 pub struct FillDescriptor {
     /// Points the define the region of interest.
