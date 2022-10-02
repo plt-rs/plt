@@ -319,185 +319,127 @@ impl<'a> SubplotBuilder<'a> {
         self
     }
 
-    /// Sets the label of the default x-axis.
-    pub fn xlabel(mut self, label: &'a str) -> Self {
-        self.desc.xaxis.label = label;
-        self
-    }
-    /// Sets the limits of the default x-axis.
-    pub fn xlimits(mut self, limits: Limits) -> Self {
-        if let Limits::Manual { min, max } = limits {
-            self.desc.xaxis.limits = Some((min, max));
-            self.desc.xaxis.span = Some((min, max));
+    /// Sets axis labels.
+    pub fn label(mut self, axis: Axis, label: &'a str) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            axis.label = label;
         }
-        self.desc.xaxis.limit_policy = limits;
-        self
-    }
-    /// Sets the grid settings for the default x-axis.
-    pub fn xgrid(mut self, grid: Grid) -> Self {
-        self.desc.xaxis.grid = grid;
-        self
-    }
-    /// Sets the major tick mark locations of the default x-axis.
-    pub fn xmajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.xaxis.major_tick_marks = spacing;
-        self
-    }
-    /// Sets the major tick mark labels of the default x-axis.
-    pub fn xmajor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.xaxis.major_tick_labels = labels;
-        self
-    }
-    /// Sets the minor tick mark locations of the default x-axis.
-    pub fn xminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.xaxis.minor_tick_marks = spacing;
-        self
-    }
-    /// Sets the minor tick mark labels of the default x-axis.
-    pub fn xminor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.xaxis.minor_tick_labels = labels;
-        self
-    }
-    /// Sets the visibility of the default x-axis line.
-    pub fn xvisible(mut self, visible: bool) -> Self {
-        self.desc.xaxis.visible = visible;
-        self
-    }
 
-    /// Sets the label of the default y-axis.
-    pub fn ylabel(mut self, label: &'a str) -> Self {
-        self.desc.yaxis.label = label;
         self
     }
-    /// Sets the limits of the default y-axis.
-    pub fn ylimits(mut self, limits: Limits) -> Self {
-        if let Limits::Manual { min, max } = limits {
-            self.desc.yaxis.limits = Some((min, max));
-            self.desc.yaxis.span = Some((min, max));
+    /// Sets axis limits.
+    pub fn limits(mut self, axis: Axis, limits: Limits) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            if let Limits::Manual { min, max } = limits {
+                axis.limits = Some((min, max));
+                axis.span = Some((min, max));
+            }
+            axis.limit_policy = limits;
         }
-        self.desc.yaxis.limit_policy = limits;
-        self
-    }
-    /// Sets the grid settings for the default y-axis.
-    pub fn ygrid(mut self, grid: Grid) -> Self {
-        self.desc.yaxis.grid = grid;
-        self
-    }
-    /// Sets the major tick mark locations of the default y-axis.
-    pub fn ymajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.yaxis.major_tick_marks = spacing;
-        self
-    }
-    /// Sets the major tick mark labels of the default y-axis.
-    pub fn ymajor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.yaxis.major_tick_labels = labels;
-        self
-    }
-    /// Sets the minor tick mark locations of the default y-axis.
-    pub fn yminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.yaxis.minor_tick_marks = spacing;
-        self
-    }
-    /// Sets the minor tick mark labels of the default y-axis.
-    pub fn yminor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.yaxis.minor_tick_labels = labels;
-        self
-    }
-    /// Sets the visibility of the default y-axis line.
-    pub fn yvisible(mut self, visible: bool) -> Self {
-        self.desc.yaxis.visible = visible;
-        self
-    }
 
-    /// Sets the label of the secondary x-axis.
-    pub fn secondary_xlabel(mut self, label: &'a str) -> Self {
-        self.desc.secondary_xaxis.label = label;
         self
     }
-    /// Sets the limits of the secondary x-axis.
-    pub fn secondary_xlimits(mut self, limits: Limits) -> Self {
-        if let Limits::Manual { min, max } = limits {
-            self.desc.secondary_xaxis.limits = Some((min, max));
-            self.desc.secondary_xaxis.span = Some((min, max));
+    /// Sets axis grid settings.
+    pub fn grid(mut self, axis: Axis, grid: Grid) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            axis.grid = grid;
         }
-        self.desc.secondary_xaxis.limit_policy = limits;
-        self
-    }
-    /// Sets the grid settings for the secondary x-axis.
-    pub fn secondary_xgrid(mut self, grid: Grid) -> Self {
-        self.desc.secondary_xaxis.grid = grid;
-        self
-    }
-    /// Sets the major tick mark locations of the secondary x-axis.
-    pub fn secondary_xmajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.secondary_xaxis.major_tick_marks = spacing;
-        self
-    }
-    /// Sets the major tick mark labels of the secondary x-axis.
-    pub fn secondary_xmajor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.secondary_xaxis.major_tick_labels = labels;
-        self
-    }
-    /// Sets the minor tick mark locations of the secondary x-axis.
-    pub fn secondary_xminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.secondary_xaxis.minor_tick_marks = spacing;
-        self
-    }
-    /// Sets the minor tick mark labels of the secondary x-axis.
-    pub fn secondary_xminor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.secondary_xaxis.minor_tick_labels = labels;
-        self
-    }
-    /// Sets the visibility of the secondary x-axis line.
-    pub fn secondary_xvisible(mut self, visible: bool) -> Self {
-        self.desc.secondary_xaxis.visible = visible;
-        self
-    }
 
-    /// Sets the label of the secondary y-axis.
-    pub fn secondary_ylabel(mut self, label: &'a str) -> Self {
-        self.desc.secondary_yaxis.label = label;
         self
     }
-    /// Sets the limits of the secondary y-axis.
-    pub fn secondary_ylimits(mut self, limits: Limits) -> Self {
-        if let Limits::Manual { min, max } = limits {
-            self.desc.secondary_yaxis.limits = Some((min, max));
-            self.desc.secondary_yaxis.span = Some((min, max));
+    /// Sets major tick mark locations.
+    pub fn major_tick_marks(mut self, axis: Axis, spacing: TickSpacing) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            axis.major_tick_marks = spacing.clone();
         }
-        self.desc.secondary_yaxis.limit_policy = limits;
+
         self
     }
-    /// Sets the grid settings for the secondary y-axis.
-    pub fn secondary_ygrid(mut self, grid: Grid) -> Self {
-        self.desc.secondary_yaxis.grid = grid;
+    /// Sets major tick mark labels.
+    pub fn major_tick_labels(mut self, axis: Axis, labels: TickLabels) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            axis.major_tick_labels = labels.clone();
+        }
+
         self
     }
-    /// Sets the major tick mark locations of the secondary y-axis.
-    pub fn secondary_ymajor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.secondary_yaxis.major_tick_marks = spacing;
+    /// Sets minor tick mark locations.
+    pub fn minor_tick_marks(mut self, axis: Axis, spacing: TickSpacing) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            axis.minor_tick_marks = spacing.clone();
+        }
+
         self
     }
-    /// Sets the major tick mark labels of the secondary y-axis.
-    pub fn secondary_ymajor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.secondary_yaxis.major_tick_labels = labels;
+    /// Sets minor tick mark labels.
+    pub fn minor_tick_labels(mut self, axis: Axis, labels: TickLabels) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            axis.minor_tick_labels = labels.clone();
+        }
+
         self
     }
-    /// Sets the minor tick mark locations of the secondary y-axis.
-    pub fn secondary_yminor_tick_marks(mut self, spacing: TickSpacing) -> Self {
-        self.desc.secondary_yaxis.minor_tick_marks = spacing;
+    /// Sets the visibility of axis lines.
+    pub fn visible(mut self, axis: Axis, visible: bool) -> Self {
+        let axes = self.axes(axis);
+        for axis in axes {
+            axis.visible = visible;
+        }
+
         self
     }
-    /// Sets the minor tick mark labels of the secondary y-axis.
-    pub fn secondary_yminor_tick_labels(mut self, labels: TickLabels) -> Self {
-        self.desc.secondary_yaxis.minor_tick_labels = labels;
-        self
+}
+impl<'a> SubplotBuilder<'a> {
+    fn axes<'b>(&'b mut self, axis: Axis) -> Vec<&'b mut AxisDescriptor<&'a str>> {
+        match axis {
+            Axis::X => vec![&mut self.desc.xaxis],
+            Axis::Y => vec![&mut self.desc.yaxis],
+            Axis::SecondaryX => vec![&mut self.desc.secondary_xaxis],
+            Axis::SecondaryY => vec![&mut self.desc.secondary_yaxis],
+            Axis::BothX => vec![
+                &mut self.desc.xaxis,
+                &mut self.desc.secondary_xaxis,
+            ],
+            Axis::BothY => vec![
+                &mut self.desc.yaxis,
+                &mut self.desc.secondary_yaxis,
+            ],
+            Axis::BothPrimary => vec![
+                &mut self.desc.xaxis,
+                &mut self.desc.yaxis,
+            ],
+            Axis::BothSecondary => vec![
+                &mut self.desc.secondary_xaxis,
+                &mut self.desc.secondary_yaxis,
+            ],
+            Axis::All => vec![
+                &mut self.desc.xaxis,
+                &mut self.desc.yaxis,
+                &mut self.desc.secondary_xaxis,
+                &mut self.desc.secondary_yaxis,
+            ],
+        }
     }
-    /// Sets the visibility of the secondary y-axis line.
-    pub fn secondary_yvisible(mut self, visible: bool) -> Self {
-        self.desc.secondary_yaxis.visible = visible;
-        self
-    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Axis {
+    X,
+    Y,
+    SecondaryX,
+    SecondaryY,
+    BothX,
+    BothY,
+    BothPrimary,
+    BothSecondary,
+    All,
 }
 
 /// The formatting for a subplot.

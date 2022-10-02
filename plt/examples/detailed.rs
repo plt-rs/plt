@@ -1,3 +1,5 @@
+use plt::*;
+
 use rand_distr::{Distribution, Normal};
 
 fn main() {
@@ -16,23 +18,22 @@ fn main() {
         .collect::<ndarray::Array1<_>>();
 
     // create new subplot
-    let mut subplot = plt::Subplot::builder()
-        .format(plt::SubplotFormat {
+    let mut subplot = Subplot::builder()
+        .format(SubplotFormat {
             font_size: 16.0,
             ..Default::default()
         })
-        .xlabel("x [arbitrary units]")
-        .xlimits(plt::Limits::Manual { min: 0.0, max: 10.0 })
-        .ylabel("y [arbitrary units]")
-        .ylimits(plt::Limits::Manual { min: 0.0, max: 1e3 })
-        .xgrid(plt::Grid::Major)
-        .ygrid(plt::Grid::Major)
+        .label(Axis::X, "x [arbitrary units]")
+        .limits(Axis::X, Limits::Manual { min: 0.0, max: 10.0 })
+        .label(Axis::Y, "y [arbitrary units]")
+        .limits(Axis::Y, Limits::Manual { min: 0.0, max: 1e3 })
+        .grid(Axis::BothPrimary, Grid::Major)
         .build();
 
     // plot true line
     subplot.fill_between(&xs, &upper_errors, &lower_errors).unwrap();
     subplot.plotter()
-        .line(Some(plt::LineStyle::Dashed))
+        .line(Some(LineStyle::Dashed))
         .label("true curve")
         .plot(&xs, &line_ys)
         .unwrap();
@@ -40,23 +41,23 @@ fn main() {
     // plot scatter points
     subplot.plotter()
         .line(None)
-        .marker(Some(plt::MarkerStyle::Circle))
-        .marker_color(plt::Color::TRANSPARENT)
+        .marker(Some(MarkerStyle::Circle))
+        .marker_color(Color::TRANSPARENT)
         .marker_outline(true)
-        .marker_outline_color(plt::Color::BLACK)
+        .marker_outline_color(Color::BLACK)
         .label("data")
         .plot(&xs, &scatter_ys)
         .unwrap();
 
     // make figure and add subplot
-    let mut fig = <plt::Figure>::new(&plt::FigureFormat {
-        size: plt::FigSize { width: 8.0, height: 6.0 },
+    let mut fig = <Figure>::new(&FigureFormat {
+        size: FigSize { width: 8.0, height: 6.0 },
         //face_color: plt::Color::TRANSPARENT, // uncomment for transparent background
         ..Default::default()
     });
-    fig.set_layout(plt::SingleLayout::new(subplot)).unwrap();
+    fig.set_layout(SingleLayout::new(subplot)).unwrap();
 
     // save figure to file
-    fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
-    fig.draw_file(plt::FileFormat::Svg, "example.svg").unwrap();
+    fig.draw_file(FileFormat::Png, "example.png").unwrap();
+    fig.draw_file(FileFormat::Svg, "example.svg").unwrap();
 }

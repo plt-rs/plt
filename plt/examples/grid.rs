@@ -1,3 +1,5 @@
+use plt::*;
+
 fn main() {
     // create true curve data
     let xs = ndarray::Array1::linspace(0.0, 10.0, 40);
@@ -6,34 +8,33 @@ fn main() {
         .collect::<ndarray::Array1<_>>();
 
     // create new subplot
-    let mut subplot = plt::Subplot::builder()
-        .format(plt::SubplotFormat {
+    let mut subplot = Subplot::builder()
+        .format(SubplotFormat {
             font_size: 16.0,
             ..Default::default()
         })
-        .xlabel("x [arbitrary units]")
-        .xlimits(plt::Limits::Manual { min: 0.0, max: 10.0 })
-        .ylabel("y [arbitrary units]")
-        .ylimits(plt::Limits::Manual { min: 0.0, max: 1e3 })
-        .xgrid(plt::Grid::Major)
-        .ygrid(plt::Grid::Major)
+        .label(Axis::X, "x [arbitrary units]")
+        .limits(Axis::X, Limits::Manual { min: 0.0, max: 10.0 })
+        .label(Axis::Y, "y [arbitrary units]")
+        .limits(Axis::Y, Limits::Manual { min: 0.0, max: 1e3 })
+        .grid(Axis::BothPrimary, Grid::Major)
         .build();
 
     // plot true line
     subplot.plotter()
-        .line(Some(plt::LineStyle::Dashed))
+        .line(Some(LineStyle::Dashed))
         .label("true curve")
         .plot(&xs, &ys)
         .unwrap();
 
     // make figure and add subplots in grid
-    let mut fig = <plt::Figure>::default();
-    fig.set_layout(plt::GridLayout::from_array(vec![
+    let mut fig = <Figure>::default();
+    fig.set_layout(GridLayout::from_array(vec![
         [Some(subplot.clone()), None],
         [Some(subplot.clone()), Some(subplot.clone())],
     ]))
     .unwrap();
 
     // save figure to file
-    fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
+    fig.draw_file(FileFormat::Png, "example.png").unwrap();
 }

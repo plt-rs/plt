@@ -1,3 +1,5 @@
+use plt::*;
+
 fn main() {
     // create data
     let xs: Vec<f64> = (0..=100).map(|n: u32| n as f64 / 100.0).collect();
@@ -5,11 +7,11 @@ fn main() {
     let y2s: Vec<f64> = y1s.iter().map(|y| *y * 20.0).rev().collect();
 
     // create subplot
-    let mut sp = plt::Subplot::builder()
+    let mut sp = Subplot::builder()
         .title("double plot")
-        .xlabel("x data")
-        .ylabel("y1 data")
-        .secondary_ylabel("y2 data")
+        .label(Axis::X, "x data")
+        .label(Axis::Y, "y1 data")
+        .label(Axis::SecondaryY, "y2 data")
         .build();
 
     // plot data on primary y-axis
@@ -22,9 +24,9 @@ fn main() {
         .unwrap();
 
     // make figure and add subplot
-    let mut fig = <plt::Figure>::default();
-    fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
+    let mut fig = <Figure>::default();
+    fig.set_layout(SingleLayout::new(sp)).unwrap();
 
     // save figure to file
-    fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
+    fig.draw_file(FileFormat::Png, "example.png").unwrap();
 }

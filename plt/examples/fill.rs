@@ -1,3 +1,5 @@
+use plt::*;
+
 fn main() {
     // create data
     let xs: Vec<f64> = (0..=100).map(|n: u32| n as f64).collect();
@@ -7,9 +9,9 @@ fn main() {
     let lower_errors: Vec<f64> = ys.iter().map(|y| 0.9 * y).collect();
 
     // create subplot
-    let mut sp = plt::Subplot::builder()
-        .xlabel("x data")
-        .ylabel("y data")
+    let mut sp = Subplot::builder()
+        .label(Axis::X, "x data")
+        .label(Axis::Y, "y data")
         .build();
 
     // plot data
@@ -17,9 +19,9 @@ fn main() {
     sp.plot(&xs, &ys).unwrap();
 
     // make figure and add subplot
-    let mut fig = <plt::Figure>::default();
-    fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
+    let mut fig = <Figure>::default();
+    fig.set_layout(SingleLayout::new(sp)).unwrap();
 
     // save figure to file
-    fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
+    fig.draw_file(FileFormat::Png, "example.png").unwrap();
 }
