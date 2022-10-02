@@ -229,7 +229,7 @@ impl<'a> Subplot<'a> {
             marker,
             xaxis: desc.xaxis,
             yaxis: desc.yaxis,
-            pixel_perfect: false,
+            pixel_perfect: desc.pixel_perfect,
         });
         self.plot_order.push(PlotType::Series);
     }
@@ -649,7 +649,7 @@ impl<'a, 'b> Plotter<'a, 'b> {
 
     /// Borrows step data to be plotted and consumes the plotter.
     pub fn step<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
-        self,
+        mut self,
         steps: Xs,
         ys: Ys,
     ) -> Result<(), PltError> {
@@ -665,6 +665,8 @@ impl<'a, 'b> Plotter<'a, 'b> {
         } else if ydata.iter().any(|y| y.is_nan()) {
             return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
         }
+
+        self.desc.pixel_perfect = true;
 
         let data = StepData::new(step_data, ydata);
 
@@ -675,7 +677,7 @@ impl<'a, 'b> Plotter<'a, 'b> {
 
     /// Takes ownership of step data to be plotted and consumes the plotter.
     pub fn step_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        self,
+        mut self,
         steps: Xs,
         ys: Ys,
     ) -> Result<(), PltError> {
@@ -691,6 +693,8 @@ impl<'a, 'b> Plotter<'a, 'b> {
         } else if ydata.iter().any(|y| y.is_nan()) {
             return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
         }
+
+        self.desc.pixel_perfect = true;
 
         let data = StepDataOwned::new(step_data, ydata);
 
@@ -1000,6 +1004,8 @@ pub(crate) struct PlotDescriptor {
     pub xaxis: AxisType,
     /// Which axis to use as the y-axis.
     pub yaxis: AxisType,
+    /// If plot points should be rounded to the nearest dot (pixel).
+    pub pixel_perfect: bool,
 }
 impl Default for PlotDescriptor {
     fn default() -> Self {
@@ -1011,6 +1017,7 @@ impl Default for PlotDescriptor {
             marker_format: Marker::default(),
             xaxis: AxisType::X,
             yaxis: AxisType::Y,
+            pixel_perfect: false,
         }
     }
 }

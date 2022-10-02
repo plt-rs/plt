@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 
+- Step plots are now pixel perfect.
 - Moved some plt-draw re-exports to separate submodule.
 - Changed default configuration for `Subplot` to include major and minor ticks on all axes.
 - Removed `Subplot::builder_detailed`.
