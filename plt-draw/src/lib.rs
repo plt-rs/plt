@@ -195,14 +195,14 @@ pub struct CanvasDescriptor {
     /// The background color of the canvas.
     pub face_color: Color,
     /// What type of image format will be drawn.
-    pub graphics_type: ImageFormat,
+    pub image_format: ImageFormat,
 }
 impl Default for CanvasDescriptor {
     fn default() -> Self {
         Self {
             size: Size { height: 100, width: 100 },
             face_color: Color::WHITE,
-            graphics_type: ImageFormat::Bitmap,
+            image_format: ImageFormat::Bitmap,
         }
     }
 }

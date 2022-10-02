@@ -78,14 +78,14 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
         filename: P,
     ) -> Result<(), PltError> {
         // create canvas to draw to
-        let graphics_type = match format {
+        let image_format = match format {
             FileFormat::Png | FileFormat::Jpeg => draw::ImageFormat::Bitmap,
             FileFormat::Svg => draw::ImageFormat::Svg,
         };
         let mut canvas = B::new(draw::CanvasDescriptor {
             size: self.size,
             face_color: self.face_color,
-            graphics_type,
+            image_format,
         });
 
         for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {

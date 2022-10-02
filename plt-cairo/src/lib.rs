@@ -5,23 +5,23 @@ use std::{env, fs, f64, io, path};
 pub struct CairoCanvas {
     size: draw::Size,
     context: cairo::Context,
-    graphics_type: draw::ImageFormat,
+    image_format: draw::ImageFormat,
     temp_file: Option<path::PathBuf>,
 }
 impl CairoCanvas {
     /// Construct from existing context.
-    pub fn from_context(context: &cairo::Context, size: draw::Size, graphics_type: draw::ImageFormat) -> Self {
+    pub fn from_context(context: &cairo::Context, size: draw::Size, image_format: draw::ImageFormat) -> Self {
         Self {
             size,
             context: context.clone(),
-            graphics_type,
+            image_format,
             temp_file: None,
         }
     }
 }
 impl draw::Canvas for CairoCanvas {
     fn new(desc: draw::CanvasDescriptor) -> Self {
-        let (context, temp_file) = match desc.graphics_type {
+        let (context, temp_file) = match desc.image_format {
             draw::ImageFormat::Bitmap => {
                 let surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
@@ -66,7 +66,7 @@ impl draw::Canvas for CairoCanvas {
         Self {
             size: desc.size,
             context,
-            graphics_type: desc.graphics_type,
+            image_format: desc.image_format,
             temp_file,
         }
     }
@@ -300,7 +300,7 @@ impl draw::Canvas for CairoCanvas {
     }
 
     fn save_file<P: AsRef<path::Path>>(&mut self, desc: draw::SaveFileDescriptor<P>) {
-        match self.graphics_type {
+        match self.image_format {
             draw::ImageFormat::Bitmap => {
                 match desc.format {
                     #[cfg(feature = "png")]

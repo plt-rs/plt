@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Rename `graphics_type` to `image_format` to match type name.
 - `fill_region` function for `Canvas` to facilitate a `fill_between` function in `plt`.
 
 ## [0.3.0] - 2022-09-07
