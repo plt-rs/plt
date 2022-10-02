@@ -533,12 +533,12 @@ fn draw_subplot<B: backend::Canvas>(
         let minor_ticks = if let TickSpacing::Manual(ticks) = &axis.minor_tick_marks {
             ticks.clone()
         } else {
-            let nticks = match &axis.minor_tick_marks {
+            let nticks_per_major = match &axis.minor_tick_marks {
                 TickSpacing::Count(n) => *n,
-                TickSpacing::On => major_ticks.len() as u16 * 5,
+                TickSpacing::On => 4,
                 TickSpacing::Auto => {
                     if is_primary {
-                        major_ticks.len() as u16 * 5
+                        4
                     } else {
                         0
                     }
@@ -547,9 +547,22 @@ fn draw_subplot<B: backend::Canvas>(
                 _ => 0,
             };
 
+            if major_ticks.len() > 0 {
+                let major_tick_delta = (span.1 - span.0) / (major_ticks.len() - 1) as f64;
+                let minor_tick_delta = major_tick_delta / (nticks_per_major + 1) as f64;
+
+                let nticks_before_first = ((span.0 - limits.0) as f64 / minor_tick_delta).floor();
+                let start = span.0 - (nticks_before_first * minor_tick_delta);
+                let nticks = ((limits.1 - start) as f64 / minor_tick_delta).floor() as usize + 1;
+
             (0..nticks)
-                .map(|n| span.0 + (span.1 - span.0) * (n as f64 / (nticks - 1) as f64))
+                .map(|n| start + (minor_tick_delta * n as f64))
                 .collect::<Vec<_>>()
+            } else {
+                vec![]
+            }
+
+
         };
         // remove overlap between major and minor ticks
         let minor_ticks = minor_ticks.iter()

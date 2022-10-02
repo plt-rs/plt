@@ -13,10 +13,9 @@ fn main() {
         })
         .label(Axis::X, "x [arbitrary units]")
         .limits(Axis::X, Limits::Manual { min: 0.0, max: 50.0 })
-        .major_tick_marks(Axis::BothX, TickSpacing::Count(6))
-        .minor_tick_marks(Axis::BothX, TickSpacing::Count(31))
         .label(Axis::Y, "y [arbitrary units]")
         .limits(Axis::Y, Limits::Manual { min: 0.0, max: 5.0 })
+        .major_tick_marks(Axis::BothX, TickSpacing::Count(6))
         .grid(Axis::BothPrimary, Grid::Major)
         .build();
 

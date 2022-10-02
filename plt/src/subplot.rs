@@ -328,6 +328,7 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+
     /// Sets axis limits.
     pub fn limits(mut self, axis: Axis, limits: Limits) -> Self {
         let axes = self.axes(axis);
@@ -341,6 +342,7 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+
     /// Sets axis grid settings.
     pub fn grid(mut self, axis: Axis, grid: Grid) -> Self {
         let axes = self.axes(axis);
@@ -350,6 +352,7 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+
     /// Sets major tick mark locations.
     pub fn major_tick_marks(mut self, axis: Axis, spacing: TickSpacing) -> Self {
         let axes = self.axes(axis);
@@ -359,6 +362,7 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+
     /// Sets major tick mark labels.
     pub fn major_tick_labels(mut self, axis: Axis, labels: TickLabels) -> Self {
         let axes = self.axes(axis);
@@ -368,6 +372,7 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+
     /// Sets minor tick mark locations.
     pub fn minor_tick_marks(mut self, axis: Axis, spacing: TickSpacing) -> Self {
         let axes = self.axes(axis);
@@ -377,6 +382,7 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+
     /// Sets minor tick mark labels.
     pub fn minor_tick_labels(mut self, axis: Axis, labels: TickLabels) -> Self {
         let axes = self.axes(axis);
@@ -386,6 +392,7 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+
     /// Sets the visibility of axis lines.
     pub fn visible(mut self, axis: Axis, visible: bool) -> Self {
         let axes = self.axes(axis);
