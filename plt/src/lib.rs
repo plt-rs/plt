@@ -16,20 +16,20 @@
 //!let ys: Vec<f64> = xs.iter().map(|x| x.powi(3)).collect();
 //!
 //!// create subplot
-//!let mut sp = plt::Subplot::builder()
-//!    .xlabel("x data")
-//!    .ylabel("y data")
+//!let mut sp = Subplot::builder()
+//!    .label(Axis::X, "x data")
+//!    .label(Axis::Y, "y data")
 //!    .build();
 //!
 //!// plot data
 //!sp.plot(&xs, &ys).unwrap();
 //!
 //!// make figure and add subplot
-//!let mut fig = <plt::Figure>::default();
-//!fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
+//!let mut fig = <Figure>::default();
+//!fig.set_layout(SingleLayout::new(sp)).unwrap();
 //!
 //!// save figure to file
-//!fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
+//!fig.draw_file(FileFormat::Png, "example.png").unwrap();
 //! ```
 //!
 //! # Dependencies
