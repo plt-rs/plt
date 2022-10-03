@@ -547,7 +547,7 @@ fn draw_subplot<B: backend::Canvas>(
                 _ => 0,
             };
 
-            if major_ticks.len() > 0 {
+            if !major_ticks.is_empty() {
                 let major_tick_delta = (span.1 - span.0) / (major_ticks.len() - 1) as f64;
                 let minor_tick_delta = major_tick_delta / (nticks_per_major + 1) as f64;
 
