@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Breaking Changes
 
 - All `Canvas` methods return results.
+- `ImageFormat`, `FileFormat`, and `Shape` are now `non_exhaustive`.
 
 ### Added
 

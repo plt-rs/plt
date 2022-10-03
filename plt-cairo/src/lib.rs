@@ -22,7 +22,11 @@ pub struct CairoCanvas {
 }
 impl CairoCanvas {
     /// Construct from existing context.
-    pub fn from_context(context: &cairo::Context, size: draw::Size, image_format: draw::ImageFormat) -> Self {
+    pub fn from_context(
+        context: &cairo::Context,
+        size: draw::Size,
+        image_format: draw::ImageFormat,
+    ) -> Self {
         Self {
             size,
             context: context.clone(),
@@ -66,6 +70,11 @@ impl draw::Canvas for CairoCanvas {
                     "svg feature is not enabled".to_string()
                 ))
             },
+            image_format => {
+                return Err(draw::DrawError::UnsupportedImageFormat(
+                    format!("{:?} is not supported by the Cairo backend", image_format)
+                ))
+            }
         };
 
         context.set_source_rgba(
@@ -123,6 +132,11 @@ impl draw::Canvas for CairoCanvas {
                 );
                 self.context.close_path();
             },
+            shape => {
+                return Err(draw::DrawError::UnsupportedShape(
+                    format!("{:?} is not supported by the Cairo backend", shape)
+                ))
+            }
         };
 
         // fill shape
@@ -323,7 +337,10 @@ impl draw::Canvas for CairoCanvas {
         })
     }
 
-    fn save_file<P: AsRef<path::Path>>(&mut self, desc: draw::SaveFileDescriptor<P>) -> Result<(), draw::DrawError> {
+    fn save_file<P: AsRef<path::Path>>(
+        &mut self,
+        desc: draw::SaveFileDescriptor<P>,
+    ) -> Result<(), draw::DrawError> {
         match self.image_format {
             draw::ImageFormat::Bitmap => {
                 match desc.format {
@@ -391,10 +408,11 @@ impl draw::Canvas for CairoCanvas {
                             "png feature is not enabled".to_string()
                         ))
                     },
-                    _ => {
-                        return Err(draw::DrawError::UnsupportedFileFormat(
-                            "Cairo bitmap backend does not support this file formt".to_string()
-                        ))
+                    file_format => {
+                        return Err(draw::DrawError::UnsupportedFileFormat(format!(
+                            "{:?} is not supported by the Cairo backend for bitmap images",
+                            file_format,
+                        )))
                     },
                 }
             },
@@ -417,9 +435,9 @@ impl draw::Canvas for CairoCanvas {
                             fs::remove_file(temp_file)?;
                         }
                     },
-                    _ => {
+                    file_format => {
                         return Err(draw::DrawError::UnsupportedFileFormat(
-                            "Cairo svg backend does not support this file formt".to_string()
+                            format!("{:?} is not supported for svg images", file_format)
                         ))
                     },
                 }
@@ -429,6 +447,11 @@ impl draw::Canvas for CairoCanvas {
                     "svg feature is not enabled".to_string()
                 ))
             },
+            image_format => {
+                return Err(draw::DrawError::UnsupportedImageFormat(
+                    format!("{:?} is not supported by the Cairo backend", image_format)
+                ))
+            }
         };
 
         #[allow(unreachable_code)]
@@ -477,8 +500,9 @@ impl CairoPoint {
 
 fn font_to_cairo(name: draw::FontName) -> &'static str {
     match name {
-        draw::FontName::Georgia => "Georgia",
         draw::FontName::Arial => "Arial",
+        draw::FontName::Georgia => "Georgia",
+        _ => "Arial",
     }
 }
 fn font_slant_to_cairo(slant: draw::FontSlant) -> cairo::FontSlant {

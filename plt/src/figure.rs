@@ -92,8 +92,9 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
     ) -> Result<(), PltError> {
         // create canvas to draw to
         let image_format = match format {
-            FileFormat::Png | FileFormat::Jpeg => draw::ImageFormat::Bitmap,
+            FileFormat::Png => draw::ImageFormat::Bitmap,
             FileFormat::Svg => draw::ImageFormat::Svg,
+            _ => draw::ImageFormat::Bitmap,
         };
         let mut canvas = B::new(draw::CanvasDescriptor {
             size: self.size,

@@ -1,6 +1,7 @@
 use std::{io, path};
 
 /// The error type for this library.
+#[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum DrawError {
     #[error(transparent)]
@@ -12,6 +13,8 @@ pub enum DrawError {
     UnsupportedFileFormat(String),
     #[error("{0}")]
     UnsupportedImageFormat(String),
+    #[error("{0}")]
+    UnsupportedShape(String),
 }
 
 /// 2D size in dot (pixel) numbers.
@@ -90,6 +93,7 @@ impl Color {
 }
 
 /// A drawable shape.
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum Shape {
     Circle { r: u32 },
@@ -131,6 +135,7 @@ impl Default for Font {
 }
 
 /// The name of a text font.
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum FontName {
     Arial,
@@ -191,12 +196,11 @@ pub enum Alignment {
 }
 
 /// A graphics image file format.
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum FileFormat {
     /// A PNG file format.
     Png,
-    /// A JPEG file format.
-    Jpeg,
     /// An SVG file format.
     Svg,
 }
@@ -221,6 +225,7 @@ impl Default for CanvasDescriptor {
     }
 }
 
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum ImageFormat {
     /// An image represented as a bitmap or pixel map.
@@ -385,7 +390,10 @@ pub trait Canvas {
     /// Returns a [`Size`] representing the extent of the text described by a [`TextDescriptor`].
     fn text_size(&mut self, desc: TextDescriptor) -> Result<Size, DrawError>;
     /// Save the image to a file.
-    fn save_file<P: AsRef<path::Path>>(&mut self, desc: SaveFileDescriptor<P>) -> Result<(), DrawError>;
+    fn save_file<P: AsRef<path::Path>>(
+        &mut self,
+        desc: SaveFileDescriptor<P>,
+    ) -> Result<(), DrawError>;
     /// Get canvas size.
     fn size(&self) -> Result<Size, DrawError>;
 }
