@@ -45,7 +45,7 @@ fig.draw_file(FileFormat::Png, "example.png").unwrap();
 
 ## Dependencies
 
-The package currently depends on [Cairo](https://www.cairographics.org).
+Currently, the only implemented backend depends on [Cairo](https://www.cairographics.org).
 
 ### Debian / Ubuntu
 `apt install libcairo2-dev`
