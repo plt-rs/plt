@@ -11,6 +11,7 @@
 //!
 //! ### Example
 //! ```rust
+//!# use plt::*;
 //!// create data
 //!let xs: Vec<f64> = (0..=100).map(|n: u32| n as f64 * 0.1).collect();
 //!let ys: Vec<f64> = xs.iter().map(|x| x.powi(3)).collect();
