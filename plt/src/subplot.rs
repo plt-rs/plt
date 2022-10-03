@@ -1530,7 +1530,7 @@ pub(crate) trait SeriesData: dyn_clone::DynClone + fmt::Debug {
 
 dyn_clone::clone_trait_object!(SeriesData);
 
-pub(crate) trait FillData: dyn_clone::DynClone + std::fmt::Debug {
+pub(crate) trait FillData: dyn_clone::DynClone + fmt::Debug {
     /// Returns data for the first curve in an [`Iterator`] over x, y pairs.
     fn curve1<'a>(&'a self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'a>;
     /// Returns data for the second curve in an [`Iterator`] over x, y pairs.

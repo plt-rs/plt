@@ -15,6 +15,7 @@ png = ["dep:png", "cairo-rs/png"]
 svg = ["cairo-rs/svg"]
 
 [dependencies]
+anyhow = "1"
 cairo-rs = { version = "0.15" }
 png = { version = "0.17", optional = true }
 

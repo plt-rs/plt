@@ -1,4 +1,18 @@
-use std::path;
+use std::{io, path};
+
+/// The error type for this library.
+#[derive(thiserror::Error, Debug)]
+pub enum DrawError {
+    #[error(transparent)]
+    BackendError(#[from] anyhow::Error),
+    #[error(transparent)]
+    IoError(#[from] io::Error),
+    // TODO
+    #[error("{0}")]
+    UnsupportedFileFormat(String),
+    #[error("{0}")]
+    UnsupportedImageFormat(String),
+}
 
 /// 2D size in dot (pixel) numbers.
 #[derive(Copy, Clone, Debug)]
@@ -357,21 +371,21 @@ pub struct SaveFileDescriptor<P: AsRef<path::Path>> {
 /// Represents a structure used for drawing.
 pub trait Canvas {
     /// The main constructor.
-    fn new(desc: CanvasDescriptor) -> Self;
+    fn new(desc: CanvasDescriptor) -> Result<Self, DrawError> where Self: Sized;
     /// Draws a shape described by a [`ShapeDescriptor`].
-    fn draw_shape(&mut self, desc: ShapeDescriptor);
+    fn draw_shape(&mut self, desc: ShapeDescriptor) -> Result<(), DrawError>;
     /// Draws a line described by a [`LineDescriptor`].
-    fn draw_line(&mut self, desc: LineDescriptor);
+    fn draw_line(&mut self, desc: LineDescriptor) -> Result<(), DrawError>;
     /// Draws a curve described by a [`CurveDescriptor`].
-    fn draw_curve(&mut self, desc: CurveDescriptor);
+    fn draw_curve(&mut self, desc: CurveDescriptor) -> Result<(), DrawError>;
     /// Draws color in a closed, arbitrary region described by a [`FillDescriptor`].
-    fn fill_region(&mut self, desc: FillDescriptor);
+    fn fill_region(&mut self, desc: FillDescriptor) -> Result<(), DrawError>;
     /// Draws text described by a [`TextDescriptor`].
-    fn draw_text(&mut self, desc: TextDescriptor);
+    fn draw_text(&mut self, desc: TextDescriptor) -> Result<(), DrawError>;
     /// Returns a [`Size`] representing the extent of the text described by a [`TextDescriptor`].
-    fn text_size(&mut self, desc: TextDescriptor) -> Size;
+    fn text_size(&mut self, desc: TextDescriptor) -> Result<Size, DrawError>;
     /// Save the image to a file.
-    fn save_file<P: AsRef<path::Path>>(&mut self, desc: SaveFileDescriptor<P>);
+    fn save_file<P: AsRef<path::Path>>(&mut self, desc: SaveFileDescriptor<P>) -> Result<(), DrawError>;
     /// Get canvas size.
-    fn size(&self) -> Size;
+    fn size(&self) -> Result<Size, DrawError>;
 }

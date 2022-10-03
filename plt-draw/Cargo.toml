@@ -10,3 +10,5 @@ keywords = ["plotting", "visualization", "graphics"]
 categories = ["visualization", "graphics"]
 
 [dependencies]
+anyhow = "1.0"
+thiserror = "1.0"

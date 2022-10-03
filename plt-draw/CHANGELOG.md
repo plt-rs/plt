@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- All `Canvas` methods return results.
+
 ### Added
 
+- Crate error type `DrawError`.
 - Rename `graphics_type` to `image_format` to match type name.
 - `fill_region` function for `Canvas` to facilitate a `fill_between` function in `plt`.
 

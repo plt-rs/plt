@@ -59,6 +59,7 @@ pub use draw::{Color, FileFormat, FontName};
 /// Re-exports of neccessary plt-draw backend elements.
 pub mod backend {
     pub use draw::Canvas;
+    #[cfg(feature = "cairo")]
     pub use draw_cairo::CairoCanvas;
 }
 
@@ -86,4 +87,7 @@ pub enum PltError {
     /// Returned when the provided area of a subplot is not valid.
     #[error("{0:?} is not a valid fractional area")]
     InvalidSubplotArea(layout::FractionalArea),
+    /// Returned when the drawing backend returns an error.
+    #[error(transparent)]
+    DrawError(#[from] draw::DrawError)
 }

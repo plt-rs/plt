@@ -1,4 +1,15 @@
-use std::{env, fs, f64, io, path};
+use std::{error, f64, marker, path};
+#[cfg(any(feature = "svg", feature = "png"))]
+use std::{fs, io};
+#[cfg(feature = "svg")]
+use std::env;
+
+/// Converts a Cairo error to a draw error.
+fn convert_err<E: error::Error + marker::Sync + marker::Send + 'static>(
+    e: E,
+) -> draw::DrawError {
+    draw::DrawError::BackendError(e.into())
+}
 
 /// The Cairo backend for `plt`.
 #[derive(Debug)]
@@ -6,6 +17,7 @@ pub struct CairoCanvas {
     size: draw::Size,
     context: cairo::Context,
     image_format: draw::ImageFormat,
+    #[allow(dead_code)]
     temp_file: Option<path::PathBuf>,
 }
 impl CairoCanvas {
@@ -20,7 +32,7 @@ impl CairoCanvas {
     }
 }
 impl draw::Canvas for CairoCanvas {
-    fn new(desc: draw::CanvasDescriptor) -> Self {
+    fn new(desc: draw::CanvasDescriptor) -> Result<Self, draw::DrawError> {
         let (context, temp_file) = match desc.image_format {
             draw::ImageFormat::Bitmap => {
                 let surface = cairo::ImageSurface::create(
@@ -28,9 +40,9 @@ impl draw::Canvas for CairoCanvas {
                     desc.size.width as i32,
                     desc.size.height as i32,
                 )
-                .unwrap();
+                .map_err(convert_err)?;
 
-                (cairo::Context::new(&surface).unwrap(), None)
+                (cairo::Context::new(&surface).map_err(convert_err)?, None)
             },
             draw::ImageFormat::Svg => {
                 #[cfg(feature = "svg")]
@@ -44,13 +56,15 @@ impl draw::Canvas for CairoCanvas {
                         desc.size.height.into(),
                         temp_file.as_ref(),
                     )
-                    .unwrap();
+                    .map_err(|e| draw::DrawError::BackendError(e.into()))?;
 
-                    (cairo::Context::new(&surface).unwrap(), temp_file)
+                    (cairo::Context::new(&surface).map_err(convert_err)?, temp_file)
                 }
 
                 #[cfg(not(feature = "svg"))]
-                panic!("svg feature is not enabled");
+                return Err(draw::DrawError::UnsupportedImageFormat(
+                    "svg feature is not enabled".to_string()
+                ))
             },
         };
 
@@ -63,18 +77,18 @@ impl draw::Canvas for CairoCanvas {
 
         context.paint().unwrap();
 
-        Self {
+        Ok(Self {
             size: desc.size,
             context,
             image_format: desc.image_format,
             temp_file,
-        }
+        })
     }
 
-    fn draw_shape(&mut self, desc: draw::ShapeDescriptor) {
+    fn draw_shape(&mut self, desc: draw::ShapeDescriptor) -> Result<(), draw::DrawError> {
         let origin = CairoPoint::from_point(desc.point, self.size);
 
-        self.context.save().unwrap();
+        self.context.save().map_err(convert_err)?;
 
         if let Some(area) = desc.clip_area {
             self.clip_area(area);
@@ -118,7 +132,7 @@ impl draw::Canvas for CairoCanvas {
             desc.fill_color.b,
             desc.fill_color.a,
         );
-        self.context.fill_preserve().unwrap();
+        self.context.fill_preserve().map_err(convert_err)?;
 
         // outline shape
         self.context.set_dash(desc.line_dashes, 0.0);
@@ -129,18 +143,20 @@ impl draw::Canvas for CairoCanvas {
             desc.line_color.b,
             desc.line_color.a,
         );
-        self.context.stroke().unwrap();
+        self.context.stroke().map_err(convert_err)?;
 
         self.reset_clip();
 
-        self.context.restore().unwrap();
+        self.context.restore().map_err(convert_err)?;
+
+        Ok(())
     }
 
-    fn draw_line(&mut self, desc: draw::LineDescriptor) {
+    fn draw_line(&mut self, desc: draw::LineDescriptor) -> Result<(), draw::DrawError> {
         let p1 = CairoPoint::from_point(desc.line.p1, self.size);
         let p2 = CairoPoint::from_point(desc.line.p2, self.size);
 
-        self.context.save().unwrap();
+        self.context.save().map_err(convert_err)?;
 
         if let Some(area) = desc.clip_area {
             self.clip_area(area);
@@ -161,15 +177,17 @@ impl draw::Canvas for CairoCanvas {
         self.context.line_to(p1.x + offset, p1.y - offset);
         self.context.line_to(p2.x + offset, p2.y - offset);
 
-        self.context.stroke().unwrap();
+        self.context.stroke().map_err(convert_err)?;
 
         self.reset_clip();
 
-        self.context.restore().unwrap();
+        self.context.restore().map_err(convert_err)?;
+
+        Ok(())
     }
 
-    fn draw_curve(&mut self, desc: draw::CurveDescriptor) {
-        self.context.save().unwrap();
+    fn draw_curve(&mut self, desc: draw::CurveDescriptor) -> Result<(), draw::DrawError> {
+        self.context.save().map_err(convert_err)?;
 
         if let Some(area) = desc.clip_area {
             self.clip_area(area);
@@ -194,15 +212,17 @@ impl draw::Canvas for CairoCanvas {
             self.context.line_to(point.x + offset, point.y - offset);
         }
 
-        self.context.stroke().unwrap();
+        self.context.stroke().map_err(convert_err)?;
 
         self.reset_clip();
 
-        self.context.restore().unwrap();
+        self.context.restore().map_err(convert_err)?;
+
+        Ok(())
     }
 
-    fn fill_region(&mut self, desc: draw::FillDescriptor) {
-        self.context.save().unwrap();
+    fn fill_region(&mut self, desc: draw::FillDescriptor) -> Result<(), draw::DrawError> {
+        self.context.save().map_err(convert_err)?;
 
         if let Some(area) = desc.clip_area {
             self.clip_area(area);
@@ -223,17 +243,19 @@ impl draw::Canvas for CairoCanvas {
 
         self.context.close_path();
 
-        self.context.fill().unwrap();
+        self.context.fill().map_err(convert_err)?;
 
         self.reset_clip();
 
-        self.context.restore().unwrap();
+        self.context.restore().map_err(convert_err)?;
+
+        Ok(())
     }
 
-    fn draw_text(&mut self, desc: draw::TextDescriptor) {
+    fn draw_text(&mut self, desc: draw::TextDescriptor) -> Result<(), draw::DrawError> {
         let position = CairoPoint::from_point(desc.position, self.size);
 
-        self.context.save().unwrap();
+        self.context.save().map_err(convert_err)?;
 
         if let Some(area) = desc.clip_area {
             self.clip_area(area);
@@ -253,25 +275,27 @@ impl draw::Canvas for CairoCanvas {
         );
         self.context.set_font_size(desc.font.size as f64);
 
-        let extents = self.context.text_extents(&desc.text).unwrap();
+        let extents = self.context.text_extents(&desc.text).map_err(convert_err)?;
 
         let position = align_text(position, desc.rotation, extents, desc.alignment);
         self.context.move_to(position.x, position.y);
 
-        self.context.save().unwrap();
+        self.context.save().map_err(convert_err)?;
         self.context.rotate(desc.rotation);
-        self.context.show_text(&desc.text).unwrap();
-        self.context.restore().unwrap();
+        self.context.show_text(&desc.text).map_err(convert_err)?;
+        self.context.restore().map_err(convert_err)?;
 
-        self.context.stroke().unwrap();
+        self.context.stroke().map_err(convert_err)?;
 
         self.reset_clip();
 
-        self.context.restore().unwrap();
+        self.context.restore().map_err(convert_err)?;
+
+        Ok(())
     }
 
-    fn text_size(&mut self, desc: draw::TextDescriptor) -> draw::Size {
-        self.context.save().unwrap();
+    fn text_size(&mut self, desc: draw::TextDescriptor) -> Result<draw::Size, draw::DrawError> {
+        self.context.save().map_err(convert_err)?;
 
         self.context.set_source_rgba(
             desc.color.r,
@@ -287,19 +311,19 @@ impl draw::Canvas for CairoCanvas {
         );
         self.context.set_font_size(desc.font.size as f64);
 
-        let extents = self.context.text_extents(&desc.text).unwrap();
+        let extents = self.context.text_extents(&desc.text).map_err(convert_err)?;
 
-        self.context.stroke().unwrap();
+        self.context.stroke().map_err(convert_err)?;
 
-        self.context.restore().unwrap();
+        self.context.restore().map_err(convert_err)?;
 
-        draw::Size {
+        Ok(draw::Size {
             width: extents.width.ceil() as u32,
             height: extents.height.ceil() as u32,
-        }
+        })
     }
 
-    fn save_file<P: AsRef<path::Path>>(&mut self, desc: draw::SaveFileDescriptor<P>) {
+    fn save_file<P: AsRef<path::Path>>(&mut self, desc: draw::SaveFileDescriptor<P>) -> Result<(), draw::DrawError> {
         match self.image_format {
             draw::ImageFormat::Bitmap => {
                 match desc.format {
@@ -315,10 +339,10 @@ impl draw::Canvas for CairoCanvas {
                             0,
                             0,
                         )
-                        .unwrap();
-                        self.context = cairo::Context::new(&blank_surface).unwrap();
+                        .map_err(convert_err)?;
+                        self.context = cairo::Context::new(&blank_surface).map_err(convert_err)?;
 
-                        let file = fs::File::create(desc.filename).unwrap();
+                        let file = fs::File::create(desc.filename)?;
                         let w = &mut io::BufWriter::new(file);
 
                         // configure encoder
@@ -329,10 +353,10 @@ impl draw::Canvas for CairoCanvas {
                         );
                         encoder.set_color(png::ColorType::Rgba);
                         encoder.set_depth(png::BitDepth::Eight);
-                        let mut writer = encoder.write_header().unwrap();
+                        let mut writer = encoder.write_header().map_err(convert_err)?;
 
                         // extract buffer from cairo
-                        let buffer_raw = surface.data().unwrap();
+                        let buffer_raw = surface.data().map_err(convert_err)?;
                         // fix color byte ordering
                         let buffer = buffer_raw.chunks(4)
                             .flat_map(|rgba| [rgba[2], rgba[1], rgba[0], rgba[3]])
@@ -351,22 +375,26 @@ impl draw::Canvas for CairoCanvas {
                                 unit as u8,
                             ],
                         )
-                        .unwrap();
+                        .map_err(convert_err)?;
 
-                        writer.write_image_data(&buffer[..]).unwrap();
+                        writer.write_image_data(&buffer[..]).map_err(convert_err)?;
 
                         drop(buffer_raw);
                         drop(buffer);
 
                         // return surface to self
-                        self.context = cairo::Context::new(&surface).unwrap();
+                        self.context = cairo::Context::new(&surface).map_err(convert_err)?;
                     },
                     #[cfg(not(feature = "png"))]
                     draw::FileFormat::Png => {
-                        panic!("png feature not enabled");
+                        return Err(draw::DrawError::UnsupportedFileFormat(
+                            "png feature is not enabled".to_string()
+                        ))
                     },
                     _ => {
-                        panic!("unsupported filetype for bitmap canvas");
+                        return Err(draw::DrawError::UnsupportedFileFormat(
+                            "Cairo bitmap backend does not support this file formt".to_string()
+                        ))
                     },
                 }
             },
@@ -383,24 +411,31 @@ impl draw::Canvas for CairoCanvas {
 
                         if let Some(temp_file) = &self.temp_file {
                             // copy temp file to new specified location
-                            fs::copy(temp_file, desc.filename.as_ref()).unwrap();
+                            fs::copy(temp_file, desc.filename.as_ref())?;
 
                             // remove temp file
-                            fs::remove_file(temp_file).unwrap();
+                            fs::remove_file(temp_file)?;
                         }
                     },
                     _ => {
-                        panic!("unsupported filetype for svg canvas");
+                        return Err(draw::DrawError::UnsupportedFileFormat(
+                            "Cairo svg backend does not support this file formt".to_string()
+                        ))
                     },
                 }
 
                 #[cfg(not(feature = "svg"))]
-                panic!("svg feature is not enabled");
+                return Err(draw::DrawError::UnsupportedFileFormat(
+                    "svg feature is not enabled".to_string()
+                ))
             },
         };
+
+        #[allow(unreachable_code)]
+        Ok(())
     }
-    fn size(&self) -> draw::Size {
-        self.size
+    fn size(&self) -> Result<draw::Size, draw::DrawError> {
+        Ok(self.size)
     }
 }
 impl CairoCanvas {

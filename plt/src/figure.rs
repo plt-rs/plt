@@ -9,8 +9,21 @@ use std::collections::HashMap;
 use std::{f64, iter, marker, ops, path};
 
 /// Represents a whole figure, containing subplots, which can be drawn as an image.
+///
+/// Backend defaults to Cairo if cairo feature is enabled.
 #[derive(Debug)]
+#[cfg(feature = "cairo")]
 pub struct Figure<'a, B: backend::Canvas = backend::CairoCanvas> {
+    subplots: Vec<Subplot<'a>>,
+    subplot_areas: Vec<draw::Area>,
+    size: draw::Size,
+    scaling: f32,
+    dpi: u16,
+    face_color: Color,
+    phantom: marker::PhantomData<B>,
+}
+#[cfg(not(feature = "cairo"))]
+pub struct Figure<'a, B: backend::Canvas> {
     subplots: Vec<Subplot<'a>>,
     subplot_areas: Vec<draw::Area>,
     size: draw::Size,
@@ -60,7 +73,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
     /// Draw figure to provided backend.
     pub fn draw_to_backend(&mut self, backend: &mut B) -> Result<(), PltError> {
         let old_size = self.size;
-        self.size = backend.size();
+        self.size = backend.size()?;
 
         for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {
             draw_subplot(backend, subplot, subplot_area, self.scaling)?;
@@ -86,7 +99,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
             size: self.size,
             face_color: self.face_color,
             image_format,
-        });
+        })?;
 
         for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {
             draw_subplot(&mut canvas, subplot, subplot_area, self.scaling)?;
@@ -97,7 +110,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
             filename: filename.as_ref(),
             format,
             dpi: self.dpi,
-        });
+        })?;
 
         Ok(())
     }
@@ -426,7 +439,7 @@ fn draw_subplot<B: backend::Canvas>(
             ..Default::default()
         },
         ..Default::default()
-    });
+    })?;
     let letter_size = draw::Size {
         width: (letter_size.width as f32 * scaling) as u32,
         height: (letter_size.height as f32 * scaling) as u32,
@@ -749,7 +762,7 @@ fn draw_subplot<B: backend::Canvas>(
         fill_color: subplot.format.plot_color,
         line_color: Color::TRANSPARENT,
         ..Default::default()
-    });
+    })?;
 
     // draw grid lines
     for (placement, axis) in finalized_axes.iter() {
@@ -796,7 +809,7 @@ fn draw_subplot<B: backend::Canvas>(
                         line_color: grid_color,
                         line_width,
                         ..Default::default()
-                    });
+                    })?;
                 }
             }
         }
@@ -876,7 +889,7 @@ fn draw_subplot<B: backend::Canvas>(
                     line_width: line.width * scaling.round() as u32,
                     dashes: dashes.as_slice(),
                     clip_area: Some(plot_area),
-                });
+                })?;
             }
 
             // draw markers
@@ -943,7 +956,7 @@ fn draw_subplot<B: backend::Canvas>(
                         line_width: line.width * scaling.round() as u32,
                         line_dashes: line_dashes.as_slice(),
                         clip_area: Some(plot_area),
-                    });
+                    })?;
                 }
             }
         }
@@ -977,7 +990,7 @@ fn draw_subplot<B: backend::Canvas>(
                 points: shape_points,
                 fill_color: color,
                 clip_area: Some(plot_area),
-            });
+            })?;
         }
     }}
 
@@ -1039,7 +1052,7 @@ fn draw_subplot<B: backend::Canvas>(
             line_width,
             line_color: axis_line_color,
             ..Default::default()
-        });
+        })?;
 
         // draw tick label modifiers if necessary
         let mult_offset_text = if axis.label_multiplier != 0 && axis.label_offset != 0.0 {
@@ -1095,7 +1108,7 @@ fn draw_subplot<B: backend::Canvas>(
                 ..Default::default()
             },
             ..Default::default()
-        });
+        })?;
 
         // draw axis label
         let label_font = draw::Font {
@@ -1115,7 +1128,7 @@ fn draw_subplot<B: backend::Canvas>(
                 color: font_color,
                 font: label_font,
                 ..Default::default()
-            }),
+            })?,
             AxisType::X => canvas.draw_text(draw::TextDescriptor {
                 text: axis.label,
                 position: draw::Point {
@@ -1127,7 +1140,7 @@ fn draw_subplot<B: backend::Canvas>(
                 color: font_color,
                 font: label_font,
                 ..Default::default()
-            }),
+            })?,
             AxisType::SecondaryY => canvas.draw_text(draw::TextDescriptor {
                 text: axis.label,
                 position: draw::Point {
@@ -1139,7 +1152,7 @@ fn draw_subplot<B: backend::Canvas>(
                 color: font_color,
                 font: label_font,
                 ..Default::default()
-            }),
+            })?,
             AxisType::SecondaryX => canvas.draw_text(draw::TextDescriptor {
                 text: axis.label,
                 position: draw::Point {
@@ -1151,7 +1164,7 @@ fn draw_subplot<B: backend::Canvas>(
                 color: font_color,
                 font: label_font,
                 ..Default::default()
-            }),
+            })?,
         }
 
         // draw ticks
@@ -1275,7 +1288,7 @@ fn draw_subplot<B: backend::Canvas>(
                     line_color,
                     line_width,
                     ..Default::default()
-                });
+                })?;
                 canvas.draw_text(draw::TextDescriptor {
                     text: tick.to_string(),
                     position: text_position,
@@ -1287,7 +1300,7 @@ fn draw_subplot<B: backend::Canvas>(
                         ..Default::default()
                     },
                     ..Default::default()
-                });
+                })?;
             }
         }
     }
@@ -1307,7 +1320,7 @@ fn draw_subplot<B: backend::Canvas>(
             ..Default::default()
         },
         ..Default::default()
-    });
+    })?;
 
     Ok(())
 }
