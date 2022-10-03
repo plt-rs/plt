@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 
+- `PltError`, `LineStyle`, and `MarkerStyle` are now `non_exhaustive`.
 - Minor tick mark locations are now spaced according to major ticks.
 - Minor tick marks extend beyond major ticks when appropriate.
 - Step plots are now pixel perfect.

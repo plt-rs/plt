@@ -894,6 +894,7 @@ impl<'a, 'b> Filler<'a, 'b> {
 }
 
 /// Plotting line styles.
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum LineStyle {
     /// A solid line.

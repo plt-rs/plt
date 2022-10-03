@@ -64,6 +64,7 @@ pub mod backend {
 }
 
 /// The error type for this library.
+#[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum PltError {
     /// Returned in the case of input data in an invalid state.
