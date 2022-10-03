@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Major Changes
 
-- Changed `SubplotBuilder` methods to take `Axis` type for specifying which axes are modified.
+- Changed `SubplotBuilder` methods to take `Axes` type for specifying which axes are modified.
 - Separated `plot` into `plot`, `plot_owned`, `step`, and `step_owned`.
 - `plot` functions now take data directly.
 - Removed `SeriesData` and all implementors from public API.
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `Axis` type for specifying which axes should be modified by `SubplotBuilder` methods.
+- `Axes` type for specifying which axes should be modified by `SubplotBuilder` methods.
 - `fill_between` functionality.
 
 ## [0.3.1] - 2022-09-09

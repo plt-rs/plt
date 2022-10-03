@@ -18,25 +18,27 @@ To get started, see the [examples](https://github.com/plt-rs/plt/tree/main/plt/e
 
 ### Example
 ```rust
+use plt::*;
+
 // create data
 let xs: Vec<f64> = (0..=100).map(|n: u32| n as f64 * 0.1).collect();
 let ys: Vec<f64> = xs.iter().map(|x| x.powi(3)).collect();
 
 // create subplot
-let mut sp = plt::Subplot::builder()
-    .label(plt::Axis::X, "x data")
-    .label(plt::Axis::Y, "y data")
+let mut sp = Subplot::builder()
+    .label(Axes::X, "x data")
+    .label(Axes::Y, "y data")
     .build();
 
 // plot data
 sp.plot(&xs, &ys).unwrap();
 
 // make figure and add subplot
-let mut fig = <plt::Figure>::default();
-fig.set_layout(plt::SingleLayout::new(sp)).unwrap();
+let mut fig = <Figure>::default();
+fig.set_layout(SingleLayout::new(sp)).unwrap();
 
 // save figure to file
-fig.draw_file(plt::FileFormat::Png, "example.png").unwrap();
+fig.draw_file(FileFormat::Png, "example.png").unwrap();
 ```
 
 ![Simple Example](https://github.com/plt-rs/plt/blob/main/plt/examples/assets/simple.png?raw=true)

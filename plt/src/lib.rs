@@ -3,7 +3,7 @@
 //! # Structure
 //! - Plots are drawn on a [`Subplot`].
 //! - One or more subplots are organized in a [`Layout`].
-//! - The layout is added to a [`Figure`], which is used to draw to a file or directly to a [`Backend`].
+//! - The layout is added to a [`Figure`], which is used to draw to a file or directly to a [`backend::Canvas`].
 //!
 //! # Use
 //!
@@ -18,8 +18,8 @@
 //!
 //!// create subplot
 //!let mut sp = Subplot::builder()
-//!    .label(Axis::X, "x data")
-//!    .label(Axis::Y, "y data")
+//!    .label(Axes::X, "x data")
+//!    .label(Axes::Y, "y data")
 //!    .build();
 //!
 //!// plot data

@@ -23,10 +23,10 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         })
-        .minor_tick_marks(Axis::BothPrimary, TickSpacing::Count(1))
-        .major_tick_marks(Axis::BothSecondary, TickSpacing::None)
-        .minor_tick_marks(Axis::BothSecondary, TickSpacing::None)
-        .limits(Axis::BothPrimary, Limits::Manual { min: -6.0, max: 6.0 })
+        .minor_tick_marks(Axes::BothPrimary, TickSpacing::Count(1))
+        .major_tick_marks(Axes::BothSecondary, TickSpacing::None)
+        .minor_tick_marks(Axes::BothSecondary, TickSpacing::None)
+        .limits(Axes::BothPrimary, Limits::Manual { min: -6.0, max: 6.0 })
         .build();
 
     // scatter plot
@@ -57,11 +57,11 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         })
-        .limits(Axis::X, Limits::Manual { min: -6.0, max: 6.0 })
-        .limits(Axis::Y, Limits::Manual { min: 0.0, max: 500.0 })
-        .minor_tick_marks(Axis::BothPrimary, TickSpacing::Count(1))
-        .major_tick_marks(Axis::BothSecondary, TickSpacing::None)
-        .minor_tick_marks(Axis::BothSecondary, TickSpacing::None)
+        .limits(Axes::X, Limits::Manual { min: -6.0, max: 6.0 })
+        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 500.0 })
+        .minor_tick_marks(Axes::BothPrimary, TickSpacing::Count(1))
+        .major_tick_marks(Axes::BothSecondary, TickSpacing::None)
+        .minor_tick_marks(Axes::BothSecondary, TickSpacing::None)
         .build();
 
     // step plot the x-value histogram
@@ -77,11 +77,11 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         })
-        .limits(Axis::X, Limits::Manual { min: -6.0, max: 6.0 })
-        .limits(Axis::Y, Limits::Manual { min: 0.0, max: 500.0 })
-        .minor_tick_marks(Axis::BothPrimary, TickSpacing::Count(1))
-        .major_tick_marks(Axis::BothSecondary, TickSpacing::None)
-        .minor_tick_marks(Axis::BothSecondary, TickSpacing::None)
+        .limits(Axes::X, Limits::Manual { min: -6.0, max: 6.0 })
+        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 500.0 })
+        .minor_tick_marks(Axes::BothPrimary, TickSpacing::Count(1))
+        .major_tick_marks(Axes::BothSecondary, TickSpacing::None)
+        .minor_tick_marks(Axes::BothSecondary, TickSpacing::None)
         .build();
 
     // step plot the y-value histogram

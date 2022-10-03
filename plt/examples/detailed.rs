@@ -23,11 +23,11 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         })
-        .label(Axis::X, "x [arbitrary units]")
-        .limits(Axis::X, Limits::Manual { min: 0.0, max: 10.0 })
-        .label(Axis::Y, "y [arbitrary units]")
-        .limits(Axis::Y, Limits::Manual { min: 0.0, max: 1e3 })
-        .grid(Axis::BothPrimary, Grid::Major)
+        .label(Axes::X, "x [arbitrary units]")
+        .limits(Axes::X, Limits::Manual { min: 0.0, max: 10.0 })
+        .label(Axes::Y, "y [arbitrary units]")
+        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 1e3 })
+        .grid(Axes::BothPrimary, Grid::Major)
         .build();
 
     // plot true line

@@ -9,9 +9,9 @@ fn main() {
     // create subplot
     let mut sp = Subplot::builder()
         .title("double plot")
-        .label(Axis::X, "x data")
-        .label(Axis::Y, "y1 data")
-        .label(Axis::SecondaryY, "y2 data")
+        .label(Axes::X, "x data")
+        .label(Axes::Y, "y1 data")
+        .label(Axes::SecondaryY, "y2 data")
         .build();
 
     // plot data on primary y-axis

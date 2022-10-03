@@ -10,8 +10,8 @@ fn main() {
 
     // create subplot
     let mut sp = Subplot::builder()
-        .label(Axis::X, "x data")
-        .label(Axis::Y, "y data")
+        .label(Axes::X, "x data")
+        .label(Axes::Y, "y data")
         .build();
 
     // plot data

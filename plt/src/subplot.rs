@@ -320,8 +320,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets axis labels.
-    pub fn label(mut self, axis: Axis, label: &'a str) -> Self {
-        let axes = self.axes(axis);
+    pub fn label(mut self, axes: Axes, label: &'a str) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             axis.label = label;
         }
@@ -330,8 +330,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets axis limits.
-    pub fn limits(mut self, axis: Axis, limits: Limits) -> Self {
-        let axes = self.axes(axis);
+    pub fn limits(mut self, axes: Axes, limits: Limits) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             if let Limits::Manual { min, max } = limits {
                 axis.limits = Some((min, max));
@@ -344,8 +344,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets axis grid settings.
-    pub fn grid(mut self, axis: Axis, grid: Grid) -> Self {
-        let axes = self.axes(axis);
+    pub fn grid(mut self, axes: Axes, grid: Grid) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             axis.grid = grid;
         }
@@ -354,8 +354,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets major tick mark locations.
-    pub fn major_tick_marks(mut self, axis: Axis, spacing: TickSpacing) -> Self {
-        let axes = self.axes(axis);
+    pub fn major_tick_marks(mut self, axes: Axes, spacing: TickSpacing) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             axis.major_tick_marks = spacing.clone();
         }
@@ -364,8 +364,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets major tick mark labels.
-    pub fn major_tick_labels(mut self, axis: Axis, labels: TickLabels) -> Self {
-        let axes = self.axes(axis);
+    pub fn major_tick_labels(mut self, axes: Axes, labels: TickLabels) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             axis.major_tick_labels = labels.clone();
         }
@@ -374,8 +374,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets minor tick mark locations.
-    pub fn minor_tick_marks(mut self, axis: Axis, spacing: TickSpacing) -> Self {
-        let axes = self.axes(axis);
+    pub fn minor_tick_marks(mut self, axes: Axes, spacing: TickSpacing) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             axis.minor_tick_marks = spacing.clone();
         }
@@ -384,8 +384,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets minor tick mark labels.
-    pub fn minor_tick_labels(mut self, axis: Axis, labels: TickLabels) -> Self {
-        let axes = self.axes(axis);
+    pub fn minor_tick_labels(mut self, axes: Axes, labels: TickLabels) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             axis.minor_tick_labels = labels.clone();
         }
@@ -394,8 +394,8 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets the visibility of axis lines.
-    pub fn visible(mut self, axis: Axis, visible: bool) -> Self {
-        let axes = self.axes(axis);
+    pub fn visible(mut self, axes: Axes, visible: bool) -> Self {
+        let axes = self.axes(axes);
         for axis in axes {
             axis.visible = visible;
         }
@@ -404,29 +404,29 @@ impl<'a> SubplotBuilder<'a> {
     }
 }
 impl<'a> SubplotBuilder<'a> {
-    fn axes<'b>(&'b mut self, axis: Axis) -> Vec<&'b mut AxisDescriptor<&'a str>> {
-        match axis {
-            Axis::X => vec![&mut self.desc.xaxis],
-            Axis::Y => vec![&mut self.desc.yaxis],
-            Axis::SecondaryX => vec![&mut self.desc.secondary_xaxis],
-            Axis::SecondaryY => vec![&mut self.desc.secondary_yaxis],
-            Axis::BothX => vec![
+    fn axes<'b>(&'b mut self, axes: Axes) -> Vec<&'b mut AxisDescriptor<&'a str>> {
+        match axes {
+            Axes::X => vec![&mut self.desc.xaxis],
+            Axes::Y => vec![&mut self.desc.yaxis],
+            Axes::SecondaryX => vec![&mut self.desc.secondary_xaxis],
+            Axes::SecondaryY => vec![&mut self.desc.secondary_yaxis],
+            Axes::BothX => vec![
                 &mut self.desc.xaxis,
                 &mut self.desc.secondary_xaxis,
             ],
-            Axis::BothY => vec![
+            Axes::BothY => vec![
                 &mut self.desc.yaxis,
                 &mut self.desc.secondary_yaxis,
             ],
-            Axis::BothPrimary => vec![
+            Axes::BothPrimary => vec![
                 &mut self.desc.xaxis,
                 &mut self.desc.yaxis,
             ],
-            Axis::BothSecondary => vec![
+            Axes::BothSecondary => vec![
                 &mut self.desc.secondary_xaxis,
                 &mut self.desc.secondary_yaxis,
             ],
-            Axis::All => vec![
+            Axes::All => vec![
                 &mut self.desc.xaxis,
                 &mut self.desc.yaxis,
                 &mut self.desc.secondary_xaxis,
@@ -436,8 +436,9 @@ impl<'a> SubplotBuilder<'a> {
     }
 }
 
+/// Identifies one or more plot axes.
 #[derive(Copy, Clone, Debug)]
-pub enum Axis {
+pub enum Axes {
     X,
     Y,
     SecondaryX,
