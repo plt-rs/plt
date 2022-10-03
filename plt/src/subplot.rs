@@ -906,6 +906,7 @@ pub enum LineStyle {
 }
 
 /// Marker shapes.
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum MarkerStyle {
     /// A circular marker.
