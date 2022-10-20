@@ -332,8 +332,8 @@ impl draw::Canvas for CairoCanvas {
         self.context.restore().map_err(convert_err)?;
 
         Ok(draw::Size {
-            width: extents.width.ceil() as u32,
-            height: extents.height.ceil() as u32,
+            width: extents.width().ceil() as u32,
+            height: extents.height().ceil() as u32,
         })
     }
 
@@ -527,81 +527,81 @@ fn align_text(
 ) -> CairoPoint {
     let (x, y) = match alignment {
         draw::Alignment::Center => (
-            position.x - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
-                + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
-            position.y - (extents.y_bearing + extents.height / 2.0)*rotation.cos()
-                - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
+            position.x - (extents.x_bearing() + extents.width() / 2.0)*rotation.cos()
+                + (extents.y_bearing() + extents.height() / 2.0)*rotation.sin(),
+            position.y - (extents.y_bearing() + extents.height() / 2.0)*rotation.cos()
+                - (extents.x_bearing() + extents.width() / 2.0)*rotation.sin(),
         ),
         draw::Alignment::Right => (
-            position.x - extents.x_bearing*rotation.cos()
-                - extents.width*rotation.cos().clamp(0.0, 1.0)
-                + extents.y_bearing*rotation.sin().clamp(0.0, 1.0),
-            position.y - (extents.y_bearing + (extents.height / 2.0))*rotation.cos()
-                - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
+            position.x - extents.x_bearing()*rotation.cos()
+                - extents.width()*rotation.cos().clamp(0.0, 1.0)
+                + extents.y_bearing()*rotation.sin().clamp(0.0, 1.0),
+            position.y - (extents.y_bearing() + (extents.height() / 2.0))*rotation.cos()
+                - (extents.x_bearing() + extents.width() / 2.0)*rotation.sin(),
         ),
         draw::Alignment::Left => (
-            position.x - extents.x_bearing*rotation.cos()
-                - extents.width*rotation.cos().clamp(-1.0, 0.0)
-                + extents.y_bearing*rotation.sin()
-                + extents.height*rotation.sin().clamp(0.0, 1.0),
-            position.y - (extents.y_bearing + extents.height / 2.0)*rotation.cos()
-                - (extents.x_bearing + extents.width / 2.0)*rotation.sin(),
+            position.x - extents.x_bearing()*rotation.cos()
+                - extents.width()*rotation.cos().clamp(-1.0, 0.0)
+                + extents.y_bearing()*rotation.sin()
+                + extents.height()*rotation.sin().clamp(0.0, 1.0),
+            position.y - (extents.y_bearing() + extents.height() / 2.0)*rotation.cos()
+                - (extents.x_bearing() + extents.width() / 2.0)*rotation.sin(),
         ),
         draw::Alignment::Top => (
-            position.x - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
-                + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
-            position.y - extents.y_bearing*rotation.cos()
-                - extents.x_bearing*rotation.sin()
-                - extents.width*rotation.sin().clamp(-1.0, 0.0)
-                - extents.height*rotation.cos().clamp(-1.0, 0.0),
+            position.x - (extents.x_bearing() + extents.width() / 2.0)*rotation.cos()
+                + (extents.y_bearing() + extents.height() / 2.0)*rotation.sin(),
+            position.y - extents.y_bearing()*rotation.cos()
+                - extents.x_bearing()*rotation.sin()
+                - extents.width()*rotation.sin().clamp(-1.0, 0.0)
+                - extents.height()*rotation.cos().clamp(-1.0, 0.0),
         ),
         draw::Alignment::Bottom => (
-            position.x - (extents.x_bearing + extents.width / 2.0)*rotation.cos()
-                + (extents.y_bearing + extents.height / 2.0)*rotation.sin(),
-            position.y - extents.y_bearing*rotation.cos()
-                - extents.height*rotation.cos().clamp(0.0, 1.0)
-                - extents.x_bearing*rotation.sin()
-                - extents.width*rotation.sin().clamp(0.0, 1.0),
+            position.x - (extents.x_bearing() + extents.width() / 2.0)*rotation.cos()
+                + (extents.y_bearing() + extents.height() / 2.0)*rotation.sin(),
+            position.y - extents.y_bearing()*rotation.cos()
+                - extents.height()*rotation.cos().clamp(0.0, 1.0)
+                - extents.x_bearing()*rotation.sin()
+                - extents.width()*rotation.sin().clamp(0.0, 1.0),
         ),
         draw::Alignment::TopRight => (
-            position.x - extents.x_bearing*rotation.cos()
-                - extents.width*rotation.cos().clamp(0.0, 1.0)
-                + extents.y_bearing*rotation.sin()
-                + extents.height*rotation.sin().clamp(-1.0, 0.0),
-            position.y - extents.y_bearing*rotation.cos()
-                - extents.height*rotation.cos().clamp(-1.0, 0.0)
-                - extents.x_bearing*rotation.sin()
-                - extents.width*rotation.sin().clamp(-1.0, 0.0),
+            position.x - extents.x_bearing()*rotation.cos()
+                - extents.width()*rotation.cos().clamp(0.0, 1.0)
+                + extents.y_bearing()*rotation.sin()
+                + extents.height()*rotation.sin().clamp(-1.0, 0.0),
+            position.y - extents.y_bearing()*rotation.cos()
+                - extents.height()*rotation.cos().clamp(-1.0, 0.0)
+                - extents.x_bearing()*rotation.sin()
+                - extents.width()*rotation.sin().clamp(-1.0, 0.0),
         ),
         draw::Alignment::TopLeft => (
-            position.x - extents.x_bearing*rotation.cos()
-                - extents.width*rotation.cos().clamp(-1.0, 0.0)
-                + extents.y_bearing*rotation.sin()
-                + extents.height*rotation.sin().clamp(0.0, 1.0),
-            position.y - extents.y_bearing*rotation.cos()
-                - extents.height*rotation.cos().clamp(-1.0, 0.0)
-                + extents.x_bearing*rotation.sin()
-                - extents.width*rotation.sin().clamp(-1.0, 0.0),
+            position.x - extents.x_bearing()*rotation.cos()
+                - extents.width()*rotation.cos().clamp(-1.0, 0.0)
+                + extents.y_bearing()*rotation.sin()
+                + extents.height()*rotation.sin().clamp(0.0, 1.0),
+            position.y - extents.y_bearing()*rotation.cos()
+                - extents.height()*rotation.cos().clamp(-1.0, 0.0)
+                + extents.x_bearing()*rotation.sin()
+                - extents.width()*rotation.sin().clamp(-1.0, 0.0),
         ),
         draw::Alignment::BottomRight => (
-            position.x - extents.x_bearing*rotation.cos()
-                - extents.width*rotation.cos().clamp(0.0, 1.0)
-                + extents.y_bearing*rotation.sin()
-                + extents.height*rotation.sin().clamp(-1.0, 0.0),
-            position.y - extents.y_bearing*rotation.cos()
-                - extents.height*rotation.cos().clamp(0.0, 1.0)
-                + extents.x_bearing*rotation.sin()
-                - extents.width*rotation.sin().clamp(0.0, 1.0),
+            position.x - extents.x_bearing()*rotation.cos()
+                - extents.width()*rotation.cos().clamp(0.0, 1.0)
+                + extents.y_bearing()*rotation.sin()
+                + extents.height()*rotation.sin().clamp(-1.0, 0.0),
+            position.y - extents.y_bearing()*rotation.cos()
+                - extents.height()*rotation.cos().clamp(0.0, 1.0)
+                + extents.x_bearing()*rotation.sin()
+                - extents.width()*rotation.sin().clamp(0.0, 1.0),
         ),
         draw::Alignment::BottomLeft => (
-            position.x - extents.x_bearing*rotation.cos()
-                - extents.width*rotation.cos().clamp(-1.0, 0.0)
-                + extents.y_bearing*rotation.sin()
-                + extents.height*rotation.sin().clamp(0.0, 1.0),
-            position.y - extents.y_bearing*rotation.cos()
-                - extents.height*rotation.cos().clamp(0.0, 1.0)
-                + extents.x_bearing*rotation.sin()
-                - extents.width*rotation.sin().clamp(0.0, 1.0),
+            position.x - extents.x_bearing()*rotation.cos()
+                - extents.width()*rotation.cos().clamp(-1.0, 0.0)
+                + extents.y_bearing()*rotation.sin()
+                + extents.height()*rotation.sin().clamp(0.0, 1.0),
+            position.y - extents.y_bearing()*rotation.cos()
+                - extents.height()*rotation.cos().clamp(0.0, 1.0)
+                + extents.x_bearing()*rotation.sin()
+                - extents.width()*rotation.sin().clamp(0.0, 1.0),
         ),
     };
 
