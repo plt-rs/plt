@@ -3,7 +3,7 @@
 [![CI](https://github.com/plt-rs/plt/actions/workflows/ci.yml/badge.svg)](https://github.com/plt-rs/plt/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/plt)](https://crates.io/crates/plt)
 [![docs.rs](https://img.shields.io/docsrs/plt)](https://docs.rs/plt)
-[![dependency status](https://deps.rs/crate/plt/0.3.1/status.svg)](https://deps.rs/crate/plt/0.3.1)
+[![dependency status](https://deps.rs/crate/plt/latest/status.svg)](https://deps.rs/crate/plt)
 
 A plotting library with a focus on publication level aesthetics and ergonomic control.
 
