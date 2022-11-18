@@ -75,7 +75,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
         self.size = backend.size()?;
 
         for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {
-            let subplot_area = subplot_area.clone().to_area(self.size);
+            let subplot_area = subplot_area.to_area(self.size);
             draw_subplot(backend, subplot, &subplot_area, self.scaling)?;
         }
 
@@ -103,7 +103,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
         })?;
 
         for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {
-            let subplot_area = subplot_area.clone().to_area(self.size);
+            let subplot_area = subplot_area.to_area(self.size);
             draw_subplot(&mut canvas, subplot, &subplot_area, self.scaling)?;
         }
 
