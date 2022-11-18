@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Deprecated `subplots` method for `Figure`.
+
+### Added
+
+- `set_size` method for `Figure` for changing figure size.
+- `clear` method for `Figure` for removing all subplots.
+
 ## [0.4.0] - 2022-10-19
 
 ### Major Changes

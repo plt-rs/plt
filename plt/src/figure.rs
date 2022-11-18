@@ -15,7 +15,7 @@ use std::{f64, iter, marker, ops, path};
 #[cfg(feature = "cairo")]
 pub struct Figure<'a, B: backend::Canvas = backend::CairoCanvas> {
     subplots: Vec<Subplot<'a>>,
-    subplot_areas: Vec<draw::Area>,
+    subplot_areas: Vec<FractionalArea>,
     size: draw::Size,
     scaling: f32,
     dpi: u16,
@@ -55,17 +55,16 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
 
     /// Adds subplots to the figure through a [`Layout`].
     pub fn set_layout<'b, L: Layout<'a>>(&'b mut self, layout: L) -> Result<(), PltError> {
-        let (mut subplots, frac_areas): (Vec<Subplot>, Vec<FractionalArea>) = layout.subplots()
+        let (mut subplots, mut frac_areas): (Vec<Subplot>, Vec<FractionalArea>) = layout.subplots()
             .into_iter()
             .unzip();
 
         if let Some(area) = frac_areas.iter().find(|area| !area.valid()) {
             return Err(PltError::InvalidSubplotArea(*area));
         }
-        let mut subplot_areas = frac_areas.iter().map(|fa| fa.to_area(self.size)).collect();
 
         self.subplots.append(&mut subplots);
-        self.subplot_areas.append(&mut subplot_areas);
+        self.subplot_areas.append(&mut frac_areas);
 
         Ok(())
     }
@@ -76,7 +75,8 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
         self.size = backend.size()?;
 
         for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {
-            draw_subplot(backend, subplot, subplot_area, self.scaling)?;
+            let subplot_area = subplot_area.clone().to_area(self.size);
+            draw_subplot(backend, subplot, &subplot_area, self.scaling)?;
         }
 
         self.size = old_size;
@@ -103,7 +103,8 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
         })?;
 
         for (subplot, subplot_area) in iter::zip(&self.subplots, &self.subplot_areas) {
-            draw_subplot(&mut canvas, subplot, subplot_area, self.scaling)?;
+            let subplot_area = subplot_area.clone().to_area(self.size);
+            draw_subplot(&mut canvas, subplot, &subplot_area, self.scaling)?;
         }
 
         // save to file
@@ -117,11 +118,26 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
     }
 
     /// Get reference to held subplots.
+    #[deprecated]
     pub fn subplots<'b>(&'b mut self) -> &mut Vec<Subplot<'a>>
     where
         'a: 'b,
     {
         &mut self.subplots
+    }
+
+    /// Change size of figure.
+    pub fn set_size(&mut self, size: FigSize) {
+        let width = (size.width * self.dpi as f32).floor() as u32;
+        let height = (size.height * self.dpi as f32).floor() as u32;
+
+        self.size = draw::Size { width, height };
+    }
+
+    /// Removes all subplots from figure.
+    pub fn clear(&mut self) {
+        self.subplots.clear();
+        self.subplot_areas.clear();
     }
 }
 impl<'a, B: backend::Canvas> Default for Figure<'a, B> {
