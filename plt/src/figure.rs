@@ -1345,7 +1345,7 @@ fn draw_subplot<B: backend::Canvas>(
         alignment: draw::Alignment::Bottom,
         color: font_color,
         font: draw::Font {
-            name: font_name.clone(),
+            name: font_name,
             size: font_size,
             ..Default::default()
         },
