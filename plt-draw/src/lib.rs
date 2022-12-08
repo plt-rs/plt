@@ -112,7 +112,7 @@ impl Shape {
 }
 
 /// Complete font settings.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Font {
     /// Name of the font used.
     pub name: FontName,
@@ -136,14 +136,16 @@ impl Default for Font {
 
 /// The name of a text font.
 #[non_exhaustive]
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum FontName {
+    FreeSans,
     Arial,
     Georgia,
+    Custom(String),
 }
 impl Default for FontName {
     fn default() -> Self {
-        Self::Arial
+        Self::FreeSans
     }
 }
 

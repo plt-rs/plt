@@ -283,7 +283,7 @@ impl draw::Canvas for CairoCanvas {
         );
 
         self.context.select_font_face(
-            font_to_cairo(desc.font.name),
+            &font_to_cairo(desc.font.name),
             font_slant_to_cairo(desc.font.slant),
             font_weight_to_cairo(desc.font.weight),
         );
@@ -319,7 +319,7 @@ impl draw::Canvas for CairoCanvas {
         );
 
         self.context.select_font_face(
-            font_to_cairo(desc.font.name),
+            &font_to_cairo(desc.font.name),
             font_slant_to_cairo(desc.font.slant),
             font_weight_to_cairo(desc.font.weight),
         );
@@ -498,11 +498,13 @@ impl CairoPoint {
     }
 }
 
-fn font_to_cairo(name: draw::FontName) -> &'static str {
+fn font_to_cairo(name: draw::FontName) -> String {
     match name {
-        draw::FontName::Arial => "Arial",
-        draw::FontName::Georgia => "Georgia",
-        _ => "Arial",
+        draw::FontName::FreeSans => "freesans".to_owned(),
+        draw::FontName::Arial => "Arial".to_owned(),
+        draw::FontName::Georgia => "Georgia".to_owned(),
+        draw::FontName::Custom(name) => name,
+        _ => "sans".to_owned(),
     }
 }
 fn font_slant_to_cairo(slant: draw::FontSlant) -> cairo::FontSlant {
