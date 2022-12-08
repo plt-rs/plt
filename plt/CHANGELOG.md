@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Each dataset passed to a plotting function has its own lifetime.
+
+### Added
+
+- New font options, including custom font names.
+
+### Fixed
+
+- Fixed case where all x's or y's had same value.
+- Fixed axis label multiplier for case of negative multiplier.
+
 ## [0.4.1] - 2022-11-18
 
 ### Changed
