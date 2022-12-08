@@ -206,7 +206,8 @@ struct AxisFinalized {
     pub visible: bool,
 }
 
-fn sigdigit(mut num: f64) -> i32 {
+fn sigdigit(num: f64) -> i32 {
+    let mut num = num.abs();
     if num == 0.0 {
         return i32::MIN;
     }
@@ -243,7 +244,7 @@ fn round_to(num: f64, place: i32) -> f64 {
     (num * f64::powi(10.0, place)).round() / f64::powi(10.0, place)
 }
 
-fn superscript(n: u16) -> String {
+fn superscript(n: i32) -> String {
     if n == 0 {
         "⁰".to_owned()
     } else if n == 1 {
@@ -266,6 +267,8 @@ fn superscript(n: u16) -> String {
         "⁹".to_owned()
     } else if n >= 10 {
         superscript(n / 10) + &superscript(n % 10)
+    } else if n < 0 {
+        "⁻".to_owned() + &superscript(n.abs())
     } else {
         "".to_owned()
     }
@@ -283,7 +286,16 @@ fn tick_modifiers(ticks: &[f64]) -> Result<(f64, i32, usize), PltError> {
     }
 
     // find the highest most significant digit location
-    let mut max_multiplier = sigdigit(*ticks.last().unwrap());
+    let highest_nonzero_tick = ticks.iter()
+        .rev()
+        .cloned()
+        .find(|&n| n != 0.0);
+    let highest_nonzero_tick = if let Some(tick) = highest_nonzero_tick {
+        tick
+    } else {
+        return Ok((0.0, 0, 0));
+    };
+    let mut max_multiplier = sigdigit(highest_nonzero_tick);
 
     // get differences between ticks
     let difs = ticks
@@ -310,7 +322,7 @@ fn tick_modifiers(ticks: &[f64]) -> Result<(f64, i32, usize), PltError> {
 
     // get true multiplier
     max_multiplier = sigdigit(round_to(
-        *ticks.last().unwrap() - offset,
+        highest_nonzero_tick - offset,
         3 - dif_multiplier,
     ));
     let multiplier = if !(-2..=3).contains(&max_multiplier) {
@@ -404,7 +416,7 @@ fn draw_subplot<B: backend::Canvas>(
     let grid_color = subplot.format.grid_color;
 
     // text formatting
-    let font_name = subplot.format.font_name;
+    let font_name = subplot.format.font_name.clone();
     let font_size = subplot.format.font_size * scaling;
     let font_color = subplot.format.text_color;
 
@@ -451,7 +463,7 @@ fn draw_subplot<B: backend::Canvas>(
     let letter_size = canvas.text_size(draw::TextDescriptor {
         text: format!("{}", 0),
         font: draw::Font {
-            name: font_name,
+            name: font_name.clone(),
             size: font_size / scaling,
             ..Default::default()
         },
@@ -599,6 +611,7 @@ fn draw_subplot<B: backend::Canvas>(
             .filter(|tick| !major_ticks.contains(tick))
             .copied()
             .collect::<Vec<_>>();
+
 
         // get major tick labels
         let (major_labels, multiplier, offset) = match &axis.major_tick_labels {
@@ -1073,10 +1086,10 @@ fn draw_subplot<B: backend::Canvas>(
 
         // draw tick label modifiers if necessary
         let mult_offset_text = if axis.label_multiplier != 0 && axis.label_offset != 0.0 {
-            let exponent = superscript(axis.label_multiplier as u16);
+            let exponent = superscript(axis.label_multiplier as i32);
             format!("x10{} + {}", exponent, axis.label_offset)
         } else if axis.label_multiplier != 0 {
-            let exponent = superscript(axis.label_multiplier as u16);
+            let exponent = superscript(axis.label_multiplier as i32);
             format!("x10{}", exponent)
         } else if axis.label_offset != 0.0 {
             format!("+ {}", axis.label_offset)
@@ -1120,7 +1133,7 @@ fn draw_subplot<B: backend::Canvas>(
             alignment: modifier_alignment,
             color: font_color,
             font: draw::Font {
-                name: font_name,
+                name: font_name.clone(),
                 size: font_size,
                 ..Default::default()
             },
@@ -1129,7 +1142,7 @@ fn draw_subplot<B: backend::Canvas>(
 
         // draw axis label
         let label_font = draw::Font {
-            name: font_name,
+            name: font_name.clone(),
             size: font_size,
             ..Default::default()
         };
@@ -1312,7 +1325,7 @@ fn draw_subplot<B: backend::Canvas>(
                     alignment: text_alignment,
                     color: font_color,
                     font: draw::Font {
-                        name: font_name,
+                        name: font_name.clone(),
                         size: font_size,
                         ..Default::default()
                     },
@@ -1332,7 +1345,7 @@ fn draw_subplot<B: backend::Canvas>(
         alignment: draw::Alignment::Bottom,
         color: font_color,
         font: draw::Font {
-            name: font_name,
+            name: font_name.clone(),
             size: font_size,
             ..Default::default()
         },

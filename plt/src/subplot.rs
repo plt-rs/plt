@@ -197,7 +197,11 @@ impl<'a> Subplot<'a> {
                 // limits
                 let (xmin, xmax) = xaxis.span.unwrap();
                 let extent = xmax - xmin;
-                xaxis.limits = Some((xmin - 0.05 * extent, xmax + 0.05 * extent));
+                xaxis.limits = if extent > 0.0 {
+                    Some((xmin - 0.05 * extent, xmax + 0.05 * extent))
+                } else {
+                    Some((xmin - 1.0, xmax + 1.0))
+                };
             },
             Limits::Manual { min: _, max: _ } => {},
         };
@@ -220,7 +224,11 @@ impl<'a> Subplot<'a> {
                 // limits
                 let (ymin, ymax) = yaxis.span.unwrap();
                 let extent = ymax - ymin;
-                yaxis.limits = Some((ymin - 0.05 * extent, ymax + 0.05 * extent));
+                yaxis.limits = if extent > 0.0 {
+                    Some((ymin - 0.05 * extent, ymax + 0.05 * extent))
+                } else {
+                    Some((ymin - 1.0, ymax + 1.0))
+                };
             },
             Limits::Manual { min: _, max: _ } => {},
         };
@@ -261,7 +269,11 @@ impl<'a> Subplot<'a> {
                 // limits
                 let (xmin, xmax) = xaxis.span.unwrap();
                 let extent = xmax - xmin;
-                xaxis.limits = Some((xmin - 0.05 * extent, xmax + 0.05 * extent));
+                xaxis.limits = if extent > 0.0 {
+                    Some((xmin - 0.05 * extent, xmax + 0.05 * extent))
+                } else {
+                    Some((xmin - 1.0, xmax + 1.0))
+                };
             },
             Limits::Manual { min: _, max: _ } => {},
         };
@@ -284,7 +296,11 @@ impl<'a> Subplot<'a> {
                 // limits
                 let (ymin, ymax) = yaxis.span.unwrap();
                 let extent = ymax - ymin;
-                yaxis.limits = Some((ymin - 0.05 * extent, ymax + 0.05 * extent));
+                yaxis.limits = if extent > 0.0 {
+                    Some((ymin - 0.05 * extent, ymax + 0.05 * extent))
+                } else {
+                    Some((ymin - 1.0, ymax + 1.0))
+                };
             },
             Limits::Manual { min: _, max: _ } => {},
         };

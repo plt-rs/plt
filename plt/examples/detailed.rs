@@ -15,7 +15,7 @@ fn main() {
     let dist = Normal::new(0.0, 0.1).unwrap();
     let scatter_ys = line_ys.iter()
         .map(|y: &f64| *y + *y * dist.sample(&mut rand::thread_rng()))
-        .collect::<ndarray::Array1<_>>();
+        .collect::<Vec<_>>();
 
     // create new subplot
     let mut subplot = Subplot::builder()
@@ -24,9 +24,9 @@ fn main() {
             ..Default::default()
         })
         .label(Axes::X, "x [arbitrary units]")
-        .limits(Axes::X, Limits::Manual { min: 0.0, max: 10.0 })
+        //.limits(Axes::X, Limits::Manual { min: 0.0, max: 10.0 })
         .label(Axes::Y, "y [arbitrary units]")
-        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 1e3 })
+        //.limits(Axes::Y, Limits::Manual { min: 0.0, max: 1e3 })
         .grid(Axes::BothPrimary, Grid::Major)
         .build();
 
