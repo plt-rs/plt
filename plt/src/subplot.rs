@@ -39,7 +39,7 @@ impl<'a> Subplot<'a> {
 
     /// Plots borrowed X, Y data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().plot()` on a [`Subplot`].
-    pub fn plot<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+    pub fn plot<'x: 'a, 'y: 'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
         &mut self,
         xs: Xs,
         ys: Ys,
@@ -69,7 +69,7 @@ impl<'a> Subplot<'a> {
 
     /// Plots borrowed step plot data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().step()` on a [`Subplot`].
-    pub fn step<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+    pub fn step<'x: 'a, 'y:'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
         &mut self,
         steps: Xs,
         ys: Ys,
@@ -100,9 +100,12 @@ impl<'a> Subplot<'a> {
     /// Fills an area between two curves on the subplot with default formatting.
     /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
     pub fn fill_between<
-        Xs: Into<ndarray::ArrayView1<'a, f64>>,
-        Y1s: Into<ndarray::ArrayView1<'a, f64>>,
-        Y2s: Into<ndarray::ArrayView1<'a, f64>>,
+        'x: 'a,
+        'y1: 'a,
+        'y2: 'a,
+        Xs: Into<ndarray::ArrayView1<'x, f64>>,
+        Y1s: Into<ndarray::ArrayView1<'y1, f64>>,
+        Y2s: Into<ndarray::ArrayView1<'y2, f64>>,
     >(
         &mut self,
         xs: Xs,
@@ -604,7 +607,7 @@ pub struct Plotter<'a, 'b> {
 }
 impl<'a, 'b> Plotter<'a, 'b> {
     /// Borrows data to be plotted and consumes the plotter.
-    pub fn plot<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+    pub fn plot<'x: 'a, 'y: 'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
         self,
         xs: Xs,
         ys: Ys,
@@ -656,7 +659,7 @@ impl<'a, 'b> Plotter<'a, 'b> {
     }
 
     /// Borrows step data to be plotted and consumes the plotter.
-    pub fn step<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+    pub fn step<'x: 'a, 'y: 'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
         mut self,
         steps: Xs,
         ys: Ys,
@@ -828,9 +831,12 @@ pub struct Filler<'a, 'b> {
 impl<'a, 'b> Filler<'a, 'b> {
     /// Fills an area between two curves on the subplot.
     pub fn fill_between<
-        Xs: Into<ndarray::ArrayView1<'a, f64>>,
-        Y1s: Into<ndarray::ArrayView1<'a, f64>>,
-        Y2s: Into<ndarray::ArrayView1<'a, f64>>,
+        'x: 'a,
+        'y1: 'a,
+        'y2: 'a,
+        Xs: Into<ndarray::ArrayView1<'x, f64>>,
+        Y1s: Into<ndarray::ArrayView1<'y1, f64>>,
+        Y2s: Into<ndarray::ArrayView1<'y2, f64>>,
     >(
         self,
         xs: Xs,
@@ -1185,11 +1191,11 @@ pub(crate) struct FillInfo<'a> {
 
 /// Holds borrowed data to be plotted.
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct PlotData<'a> {
-    xdata: ndarray::ArrayView1<'a, f64>,
-    ydata: ndarray::ArrayView1<'a, f64>,
+pub(crate) struct PlotData<'x, 'y> {
+    xdata: ndarray::ArrayView1<'x, f64>,
+    ydata: ndarray::ArrayView1<'y, f64>,
 }
-impl Default for PlotData<'_> {
+impl Default for PlotData<'_, '_> {
     fn default() -> Self {
         Self {
             xdata: ndarray::ArrayView1::<f64>::from(&[]),
@@ -1197,7 +1203,7 @@ impl Default for PlotData<'_> {
         }
     }
 }
-impl SeriesData for PlotData<'_> {
+impl SeriesData for PlotData<'_, '_> {
     fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
             self.xdata.iter().cloned(),
@@ -1218,9 +1224,9 @@ impl SeriesData for PlotData<'_> {
         self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
     }
 }
-impl<'a> PlotData<'a> {
+impl<'x, 'y> PlotData<'x, 'y> {
     /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new<Xs: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+    pub fn new<Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
         xs: Xs,
         ys: Ys,
     ) -> Self {
@@ -1281,11 +1287,11 @@ impl PlotDataOwned {
 
 /// Holds borrowed step data to be plotted.
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct StepData<'a> {
-    edges: ndarray::ArrayView1<'a, f64>,
-    ydata: ndarray::ArrayView1<'a, f64>,
+pub(crate) struct StepData<'x, 'y> {
+    edges: ndarray::ArrayView1<'x, f64>,
+    ydata: ndarray::ArrayView1<'y, f64>,
 }
-impl Default for StepData<'_> {
+impl Default for StepData<'_, '_> {
     fn default() -> Self {
         Self {
             edges: ndarray::ArrayView1::<f64>::from(&[]),
@@ -1293,7 +1299,7 @@ impl Default for StepData<'_> {
         }
     }
 }
-impl SeriesData for StepData<'_> {
+impl SeriesData for StepData<'_, '_> {
     fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
             self.edges.windows(2).into_iter().flatten().cloned(),
@@ -1314,10 +1320,10 @@ impl SeriesData for StepData<'_> {
         self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
     }
 }
-impl<'a> StepData<'a> {
+impl<'x, 'y> StepData<'x, 'y> {
     /// Main constructor, taking separate array views of steps and y-values.
     /// There should be one more step edge than y-values.
-    pub fn new<Es: Into<ndarray::ArrayView1<'a, f64>>, Ys: Into<ndarray::ArrayView1<'a, f64>>>(
+    pub fn new<Es: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
         edges: Es,
         ys: Ys,
     ) -> Self {
@@ -1379,12 +1385,12 @@ impl StepDataOwned {
 
 /// Holds borrowed data describing an area to be filled.
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct FillBetweenData<'a> {
-    xdata: ndarray::ArrayView1<'a, f64>,
-    y1_data: ndarray::ArrayView1<'a, f64>,
-    y2_data: ndarray::ArrayView1<'a, f64>,
+pub(crate) struct FillBetweenData<'x, 'y1, 'y2> {
+    xdata: ndarray::ArrayView1<'x, f64>,
+    y1_data: ndarray::ArrayView1<'y1, f64>,
+    y2_data: ndarray::ArrayView1<'y2, f64>,
 }
-impl Default for FillBetweenData<'_> {
+impl Default for FillBetweenData<'_, '_, '_> {
     fn default() -> Self {
         Self {
             xdata: ndarray::ArrayView1::<f64>::from(&[]),
@@ -1393,7 +1399,7 @@ impl Default for FillBetweenData<'_> {
         }
     }
 }
-impl FillData for FillBetweenData<'_> {
+impl FillData for FillBetweenData<'_, '_, '_> {
     fn curve1<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
             self.xdata.iter().cloned(),
@@ -1427,12 +1433,12 @@ impl FillData for FillBetweenData<'_> {
         )
     }
 }
-impl<'a> FillBetweenData<'a> {
+impl<'x, 'y1, 'y2> FillBetweenData<'x, 'y1, 'y2> {
     /// Main constructor, taking separate array views of x-values and y-values.
     pub fn new<
-        Xs: Into<ndarray::ArrayView1<'a, f64>>,
-        Y1s: Into<ndarray::ArrayView1<'a, f64>>,
-        Y2s: Into<ndarray::ArrayView1<'a, f64>>,
+        Xs: Into<ndarray::ArrayView1<'x, f64>>,
+        Y1s: Into<ndarray::ArrayView1<'y1, f64>>,
+        Y2s: Into<ndarray::ArrayView1<'y2, f64>>,
     >(
         xs: Xs,
         y1s: Y1s,
