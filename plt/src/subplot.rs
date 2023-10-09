@@ -1,6 +1,6 @@
 use crate::{Color, FontName, PltError};
 
-use std::{array, fmt, f64, iter};
+use std::{array, fmt::{self, Formatter}, f64, iter};
 
 /// The object that represents a whole subplot and is used to draw plotted data.
 #[derive(Clone, Debug)]
@@ -39,11 +39,19 @@ impl<'a> Subplot<'a> {
 
     /// Plots borrowed X, Y data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().plot()` on a [`Subplot`].
-    pub fn plot<'x: 'a, 'y: 'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
+    pub fn plot<'x: 'a, 'y: 'a, Xs, Ys, Fx, Fy>(
         &mut self,
         xs: Xs,
         ys: Ys,
-    ) -> Result<(), PltError> {
+    ) -> Result<(), PltError>
+    where
+        Fx: IntoF64,
+        Fy: IntoF64,
+        Xs: IntoIterator<Item=Fx>,
+        Ys: IntoIterator<Item=Fy>,
+        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+    {
         let plotter = Plotter {
             subplot: self,
             desc: PlotDescriptor::default(),
@@ -623,21 +631,29 @@ pub struct Plotter<'a, 'b> {
 }
 impl<'a, 'b> Plotter<'a, 'b> {
     /// Borrows data to be plotted and consumes the plotter.
-    pub fn plot<'x: 'a, 'y: 'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
+    pub fn plot<'x: 'a, 'y: 'a, Xs, Ys, Fx, Fy>(
         self,
         xs: Xs,
         ys: Ys,
-    ) -> Result<(), PltError> {
-        let xdata = xs.into();
-        let ydata = ys.into();
+    ) -> Result<(), PltError>
+    where
+        Fx: IntoF64,
+        Fy: IntoF64,
+        Xs: IntoIterator<Item=Fx>,
+        Ys: IntoIterator<Item=Fy>,
+        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+    {
+        let xdata = xs.into_iter().map(|f| f.f64());
+        let ydata = ys.into_iter().map(|f| f.f64());
 
         if xdata.len() != ydata.len() {
             return Err(PltError::InvalidData(
                 "Data is not correctly sized. x-data and y-data should be same length".to_owned()
             ));
-        } else if xdata.iter().any(|x| x.is_nan()) {
+        } else if xdata.clone().any(|x| x.is_nan()) {
             return Err(PltError::InvalidData("x-data has NaN value".to_owned()));
-        } else if ydata.iter().any(|y| y.is_nan()) {
+        } else if ydata.clone().any(|y| y.is_nan()) {
             return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
         }
 
@@ -1205,49 +1221,170 @@ pub(crate) struct FillInfo<'a> {
     pub yaxis: AxisType,
 }
 
-/// Holds borrowed data to be plotted.
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct PlotData<'x, 'y> {
-    xdata: ndarray::ArrayView1<'x, f64>,
-    ydata: ndarray::ArrayView1<'y, f64>,
+pub trait IntoF64 {
+    fn f64(self) -> f64;
 }
-impl Default for PlotData<'_, '_> {
-    fn default() -> Self {
-        Self {
-            xdata: ndarray::ArrayView1::<f64>::from(&[]),
-            ydata: ndarray::ArrayView1::<f64>::from(&[]),
-        }
+impl IntoF64 for f64 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self
     }
 }
-impl SeriesData for PlotData<'_, '_> {
+impl IntoF64 for &f64 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self
+    }
+}
+impl IntoF64 for f32 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self as f64
+    }
+}
+impl IntoF64 for &f32 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self as f64
+    }
+}
+impl IntoF64 for u8 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self as f64
+    }
+}
+impl IntoF64 for &u8 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self as f64
+    }
+}
+impl IntoF64 for u16 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self as f64
+    }
+}
+impl IntoF64 for &u16 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self as f64
+    }
+}
+impl IntoF64 for u32 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self as f64
+    }
+}
+impl IntoF64 for &u32 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self as f64
+    }
+}
+impl IntoF64 for i8 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self as f64
+    }
+}
+impl IntoF64 for &i8 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self as f64
+    }
+}
+impl IntoF64 for i16 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self as f64
+    }
+}
+impl IntoF64 for &i16 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self as f64
+    }
+}
+impl IntoF64 for i32 {
+    #[inline]
+    fn f64(self) -> f64 {
+        self as f64
+    }
+}
+impl IntoF64 for &i32 {
+    #[inline]
+    fn f64(self) -> f64 {
+        *self as f64
+    }
+}
+
+/// Holds borrowed data to be plotted.
+#[derive(Copy, Clone)]
+pub(crate) struct PlotData<Ix, Iy>
+where
+    Ix: Iterator<Item=f64> + Clone,
+    Iy: Iterator<Item=f64> + Clone,
+{
+    xdata: Ix,
+    ydata: Iy,
+}
+impl<Ix, Iy> fmt::Debug for PlotData<Ix, Iy> 
+where
+    Ix: Iterator<Item=f64> + Clone,
+    Iy: Iterator<Item=f64> + Clone,
+{
+    fn fmt(&self, _: &mut Formatter) -> Result<(), fmt::Error> {
+        Ok(())
+    }
+}
+//impl<Ix: Iterator<Item=f64>> Default for PlotData<'_, '_, Ix: Iterator<Item=f64>> {
+//    fn default() -> Self {
+//        Self {
+//            xdata: None,
+//            ydata: ndarray::ArrayView1::<f64>::from(&[]),
+//        }
+//    }
+//}
+impl<Ix, Iy> SeriesData for PlotData<Ix, Iy> 
+where
+    Ix: Iterator<Item=f64> + Clone,
+    Iy: Iterator<Item=f64> + Clone,
+{
     fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.ydata.iter().cloned(),
+            self.xdata.clone(),
+            self.ydata.clone(),
         ))
     }
 
     fn xmin(&self) -> f64 {
-        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+        self.xdata.clone().fold(f64::INFINITY, |a, b| a.min(b))
     }
     fn xmax(&self) -> f64 {
-        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+        self.xdata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
     }
     fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+        self.ydata.clone().fold(f64::INFINITY, |a, b| a.min(b))
     }
     fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+        self.ydata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
     }
 }
-impl<'x, 'y> PlotData<'x, 'y> {
+impl<Ix, Iy> PlotData<Ix, Iy>
+where
+    Ix: Iterator<Item=f64> + Clone,
+    Iy: Iterator<Item=f64> + Clone,
+{
     /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new<Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
-        xs: Xs,
-        ys: Ys,
+    pub fn new(
+        xs: Ix,
+        ys: Iy,
     ) -> Self {
-        let xdata = xs.into();
-        let ydata = ys.into();
+        let xdata = xs;
+        let ydata = ys;
 
         Self { xdata, ydata }
     }
