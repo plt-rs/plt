@@ -60,28 +60,21 @@ impl<'a> Subplot<'a> {
         plotter.plot(xs, ys)
     }
 
-    /// Plots owned X, Y data on this subplot with default plot formatting.
-    /// Shortcut for calling `.plotter().plot_owned()` on a [`Subplot`].
-    pub fn plot_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        &mut self,
-        xs: Xs,
-        ys: Ys,
-    ) -> Result<(), PltError> {
-        let plotter = Plotter {
-            subplot: self,
-            desc: PlotDescriptor::default(),
-        };
-
-        plotter.plot_owned(xs, ys)
-    }
-
     /// Plots borrowed step plot data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().step()` on a [`Subplot`].
-    pub fn step<'x: 'a, 'y:'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
+    pub fn step<'x: 'a, 'y:'a, Xs, Ys, Fx, Fy>(
         &mut self,
         steps: Xs,
         ys: Ys,
-    ) -> Result<(), PltError> {
+    ) -> Result<(), PltError>
+    where
+        Fx: IntoF64,
+        Fy: IntoF64,
+        Xs: IntoIterator<Item=Fx>,
+        Ys: IntoIterator<Item=Fy>,
+        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+    {
         let plotter = Plotter {
             subplot: self,
             desc: PlotDescriptor::default(),
@@ -90,62 +83,41 @@ impl<'a> Subplot<'a> {
         plotter.step(steps, ys)
     }
 
-    /// Plots owned step plot data on this subplot with default plot formatting.
-    /// Shortcut for calling `.plotter().step_owned()` on a [`Subplot`].
-    pub fn step_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        &mut self,
-        steps: Xs,
-        ys: Ys,
-    ) -> Result<(), PltError> {
-        let plotter = Plotter {
-            subplot: self,
-            desc: PlotDescriptor::default(),
-        };
-
-        plotter.step_owned(steps, ys)
-    }
-
     /// Fills an area between two curves on the subplot with default formatting.
     /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
     pub fn fill_between<
         'x: 'a,
         'y1: 'a,
         'y2: 'a,
-        Xs: Into<ndarray::ArrayView1<'x, f64>>,
-        Y1s: Into<ndarray::ArrayView1<'y1, f64>>,
-        Y2s: Into<ndarray::ArrayView1<'y2, f64>>,
+        Xs,
+        Y1s,
+        Y2s,
+        Fx,
+        Fy1,
+        Fy2,
     >(
         &mut self,
         xs: Xs,
         y1s: Y1s,
         y2s: Y2s,
-    ) -> Result<(), PltError> {
+    ) -> Result<(), PltError>
+    where
+        Fx: IntoF64,
+        Fy1: IntoF64,
+        Fy2: IntoF64,
+        Xs: IntoIterator<Item=Fx>,
+        Y1s: IntoIterator<Item=Fy1>,
+        Y2s: IntoIterator<Item=Fy2>,
+        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
+        <Y1s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
+        <Y2s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
+    {
         let filler = Filler {
             subplot: self,
             desc: FillDescriptor::default(),
         };
 
         filler.fill_between(xs, y1s, y2s)
-    }
-
-    /// Fills an area between two curves on the subplot with default formatting.
-    /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
-    pub fn fill_between_owned<
-        Xs: Into<ndarray::Array1<f64>>,
-        Y1s: Into<ndarray::Array1<f64>>,
-        Y2s: Into<ndarray::Array1<f64>>,
-    >(
-        &mut self,
-        xs: Xs,
-        y1s: Y1s,
-        y2s: Y2s,
-    ) -> Result<(), PltError> {
-        let filler = Filler {
-            subplot: self,
-            desc: FillDescriptor::default(),
-        };
-
-        filler.fill_between_owned(xs, y1s, y2s)
     }
 
     /// Returns the format of this plot.
@@ -664,82 +636,36 @@ impl<'a, 'b> Plotter<'a, 'b> {
         Ok(())
     }
 
-    /// Takes ownership of data to be plotted and consumes the plotter.
-    pub fn plot_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        self,
-        xs: Xs,
-        ys: Ys,
-    ) -> Result<(), PltError> {
-        let xdata = xs.into();
-        let ydata = ys.into();
-
-        if xdata.len() != ydata.len() {
-            return Err(PltError::InvalidData(
-                "Data is not correctly sized. x-data and y-data should be same length".to_owned()
-            ));
-        } else if xdata.iter().any(|x| x.is_nan()) {
-            return Err(PltError::InvalidData("x-data has NaN value".to_owned()));
-        } else if ydata.iter().any(|y| y.is_nan()) {
-            return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
-        }
-
-        let data = PlotDataOwned::new(xdata, ydata);
-
-        self.subplot.plot_desc(self.desc, data);
-
-        Ok(())
-    }
-
     /// Borrows step data to be plotted and consumes the plotter.
-    pub fn step<'x: 'a, 'y: 'a, Xs: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
+    pub fn step<'x: 'a, 'y: 'a, Xs, Ys, Fx, Fy>(
         mut self,
         steps: Xs,
         ys: Ys,
-    ) -> Result<(), PltError> {
-        let step_data = steps.into();
-        let ydata = ys.into();
+    ) -> Result<(), PltError>
+    where
+        Fx: IntoF64,
+        Fy: IntoF64,
+        Xs: IntoIterator<Item=Fx>,
+        Ys: IntoIterator<Item=Fy>,
+        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
+    {
+        let step_data = steps.into_iter().map(|f| f.f64());
+        let ydata = ys.into_iter().map(|f| f.f64());
 
         if step_data.len() != ydata.len() + 1 {
             return Err(PltError::InvalidData(
                 "Data is not correctly sized. There should be one more step than y-value".to_owned()
             ));
-        } else if step_data.iter().any(|step| step.is_nan()) {
+        } else if step_data.clone().any(|step| step.is_nan()) {
             return Err(PltError::InvalidData("step-data has NaN value".to_owned()));
-        } else if ydata.iter().any(|y| y.is_nan()) {
+        } else if ydata.clone().any(|y| y.is_nan()) {
             return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
         }
 
         self.desc.pixel_perfect = true;
 
         let data = StepData::new(step_data, ydata);
-
-        self.subplot.plot_desc(self.desc, data);
-
-        Ok(())
-    }
-
-    /// Takes ownership of step data to be plotted and consumes the plotter.
-    pub fn step_owned<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        mut self,
-        steps: Xs,
-        ys: Ys,
-    ) -> Result<(), PltError> {
-        let step_data = steps.into();
-        let ydata = ys.into();
-
-        if step_data.len() != ydata.len() + 1 {
-            return Err(PltError::InvalidData(
-                "Data is not correctly sized. There should be one more step than y-value".to_owned()
-            ));
-        } else if step_data.iter().any(|step| step.is_nan()) {
-            return Err(PltError::InvalidData("step-data has NaN value".to_owned()));
-        } else if ydata.iter().any(|y| y.is_nan()) {
-            return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
-        }
-
-        self.desc.pixel_perfect = true;
-
-        let data = StepDataOwned::new(step_data, ydata);
 
         self.subplot.plot_desc(self.desc, data);
 
@@ -866,45 +792,38 @@ impl<'a, 'b> Filler<'a, 'b> {
         'x: 'a,
         'y1: 'a,
         'y2: 'a,
-        Xs: Into<ndarray::ArrayView1<'x, f64>>,
-        Y1s: Into<ndarray::ArrayView1<'y1, f64>>,
-        Y2s: Into<ndarray::ArrayView1<'y2, f64>>,
+        Xs,
+        Y1s,
+        Y2s,
+        Fx,
+        Fy1,
+        Fy2,
     >(
         self,
         xs: Xs,
         y1s: Y1s,
         y2s: Y2s,
-    ) -> Result<(), PltError> {
-        let data = FillBetweenData::new(xs, y1s, y2s);
+    ) -> Result<(), PltError>
+    where
+        Fx: IntoF64,
+        Fy1: IntoF64,
+        Fy2: IntoF64,
+        Xs: IntoIterator<Item=Fx>,
+        Y1s: IntoIterator<Item=Fy1>,
+        Y2s: IntoIterator<Item=Fy2>,
+        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
+        <Y1s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
+        <Y2s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
+    {
+        let xdata = xs.into_iter().map(|f| f.f64());
+        let y1data = y1s.into_iter().map(|f| f.f64());
+        let y2data = y2s.into_iter().map(|f| f.f64());
+
+        let data = FillBetweenData::new(xdata, y1data, y2data);
 
         self.subplot.fill_between_desc(self.desc, data);
 
         Ok(())
-    }
-
-    /// Fills an area between two curves on the subplot.
-    pub fn fill_between_owned<
-        Xs: Into<ndarray::Array1<f64>>,
-        Y1s: Into<ndarray::Array1<f64>>,
-        Y2s: Into<ndarray::Array1<f64>>,
-    >(
-        self,
-        xs: Xs,
-        y1s: Y1s,
-        y2s: Y2s,
-    ) -> Result<(), PltError> {
-        let data = FillBetweenDataOwned::new(xs, y1s, y2s);
-
-        self.subplot.fill_between_desc(FillDescriptor::default(), data);
-
-        Ok(())
-    }
-
-    /// Uses the secondary X-Axis to reference x-data.
-    pub fn use_secondary_xaxis(mut self) -> Self {
-        self.desc.xaxis = AxisType::SecondaryX;
-
-        self
     }
 
     /// Uses the secondary Y-Axis to reference y-data.
@@ -1340,14 +1259,6 @@ where
         Ok(())
     }
 }
-//impl<Ix: Iterator<Item=f64>> Default for PlotData<'_, '_, Ix: Iterator<Item=f64>> {
-//    fn default() -> Self {
-//        Self {
-//            xdata: None,
-//            ydata: ndarray::ArrayView1::<f64>::from(&[]),
-//        }
-//    }
-//}
 impl<Ix, Iy> SeriesData for PlotData<Ix, Iy> 
 where
     Ix: Iterator<Item=f64> + Clone,
@@ -1390,281 +1301,137 @@ where
     }
 }
 
-/// Holds owned data to be plotted.
-#[derive(Clone, Debug)]
-pub(crate) struct PlotDataOwned {
-    xdata: ndarray::Array1<f64>,
-    ydata: ndarray::Array1<f64>,
-}
-impl Default for PlotDataOwned {
-    fn default() -> Self {
-        Self {
-            xdata: ndarray::Array1::<f64>::default(0),
-            ydata: ndarray::Array1::<f64>::default(0),
-        }
-    }
-}
-impl SeriesData for PlotDataOwned {
-    fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
-        Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.ydata.iter().cloned(),
-        ))
-    }
-
-    fn xmin(&self) -> f64 {
-        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-}
-impl PlotDataOwned {
-    /// Main constructor, taking separate arrays of x-values and y-values.
-    pub fn new<Xs: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        xs: Xs,
-        ys: Ys,
-    ) -> Self {
-        let xdata = xs.into();
-        let ydata = ys.into();
-
-        Self { xdata, ydata }
-    }
-}
-
 /// Holds borrowed step data to be plotted.
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct StepData<'x, 'y> {
-    edges: ndarray::ArrayView1<'x, f64>,
-    ydata: ndarray::ArrayView1<'y, f64>,
+#[derive(Copy, Clone)]
+pub(crate) struct StepData<Iedge, Idata>
+where
+    Iedge: Iterator<Item=f64> + Clone,
+    Idata: Iterator<Item=f64> + Clone,
+{
+    edges: Iedge,
+    ydata: Idata,
 }
-impl Default for StepData<'_, '_> {
-    fn default() -> Self {
-        Self {
-            edges: ndarray::ArrayView1::<f64>::from(&[]),
-            ydata: ndarray::ArrayView1::<f64>::from(&[]),
-        }
+impl<Iedge, Idata> fmt::Debug for StepData<Iedge, Idata> 
+where
+    Iedge: Iterator<Item=f64> + Clone,
+    Idata: Iterator<Item=f64> + Clone,
+{
+    fn fmt(&self, _: &mut Formatter) -> Result<(), fmt::Error> {
+        Ok(())
     }
 }
-impl SeriesData for StepData<'_, '_> {
+impl<Iedge, Idata> SeriesData for StepData<Iedge, Idata>
+where
+    Iedge: Iterator<Item=f64> + Clone,
+    Idata: Iterator<Item=f64> + Clone,
+{
     fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
-            self.edges.windows(2).into_iter().flatten().cloned(),
-            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
+            self.edges.clone().flat_map(|x| [x, x]).skip(1),
+            self.ydata.clone().flat_map(|y| [y, y]),
         ))
     }
 
     fn xmin(&self) -> f64 {
-        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+        self.edges.clone().fold(f64::INFINITY, |a, b| a.min(b))
     }
     fn xmax(&self) -> f64 {
-        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+        self.edges.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
     }
     fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+        self.ydata.clone().fold(f64::INFINITY, |a, b| a.min(b))
     }
     fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+        self.ydata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
     }
 }
-impl<'x, 'y> StepData<'x, 'y> {
+impl<Iedge, Idata> StepData<Iedge, Idata>
+where
+    Iedge: Iterator<Item=f64> + Clone,
+    Idata: Iterator<Item=f64> + Clone,
+{
     /// Main constructor, taking separate array views of steps and y-values.
     /// There should be one more step edge than y-values.
-    pub fn new<Es: Into<ndarray::ArrayView1<'x, f64>>, Ys: Into<ndarray::ArrayView1<'y, f64>>>(
-        edges: Es,
-        ys: Ys,
+    pub fn new(
+        edges: Iedge,
+        ydata: Idata,
     ) -> Self {
-        let edges = edges.into();
-        let ydata = ys.into();
-
-        Self { edges, ydata }
-    }
-}
-
-/// Holds owned step data to be plotted.
-#[derive(Clone, Debug)]
-pub(crate) struct StepDataOwned {
-    edges: ndarray::Array1<f64>,
-    ydata: ndarray::Array1<f64>,
-}
-impl Default for StepDataOwned {
-    fn default() -> Self {
-        Self {
-            edges: ndarray::Array1::<f64>::default(0),
-            ydata: ndarray::Array1::<f64>::default(0),
-        }
-    }
-}
-impl SeriesData for StepDataOwned {
-    fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
-        Box::new(iter::zip(
-            self.edges.windows(2).into_iter().flatten().cloned(),
-            self.ydata.iter().flat_map(|y| [y, y]).cloned(),
-        ))
-    }
-
-    fn xmin(&self) -> f64 {
-        self.edges.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.edges.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-}
-impl StepDataOwned {
-    /// Main constructor, taking separate arrays of step edges and y-values.
-    /// There should be one more step edge than y-values.
-    pub fn new<Es: Into<ndarray::Array1<f64>>, Ys: Into<ndarray::Array1<f64>>>(
-        edges: Es,
-        ys: Ys,
-    ) -> Self {
-        let edges = edges.into();
-        let ydata = ys.into();
-
         Self { edges, ydata }
     }
 }
 
 /// Holds borrowed data describing an area to be filled.
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct FillBetweenData<'x, 'y1, 'y2> {
-    xdata: ndarray::ArrayView1<'x, f64>,
-    y1_data: ndarray::ArrayView1<'y1, f64>,
-    y2_data: ndarray::ArrayView1<'y2, f64>,
+#[derive(Copy, Clone)]
+pub(crate) struct FillBetweenData<Ix, Iy1, Iy2>
+where
+    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+{
+    xdata: Ix,
+    y1_data: Iy1,
+    y2_data: Iy2,
 }
-impl Default for FillBetweenData<'_, '_, '_> {
-    fn default() -> Self {
-        Self {
-            xdata: ndarray::ArrayView1::<f64>::from(&[]),
-            y1_data: ndarray::ArrayView1::<f64>::from(&[]),
-            y2_data: ndarray::ArrayView1::<f64>::from(&[]),
-        }
+impl<Ix, Iy1, Iy2> fmt::Debug for FillBetweenData<Ix, Iy1, Iy2> 
+where
+    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+{
+    fn fmt(&self, _: &mut Formatter) -> Result<(), fmt::Error> {
+        Ok(())
     }
 }
-impl FillData for FillBetweenData<'_, '_, '_> {
+impl<Ix, Iy1, Iy2> FillData for FillBetweenData<Ix, Iy1, Iy2>
+where
+    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+{
     fn curve1<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.y1_data.iter().cloned(),
+            self.xdata.clone(),
+            self.y1_data.clone(),
         ))
     }
 
     fn curve2<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
         Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.y2_data.iter().cloned(),
+            self.xdata.clone(),
+            self.y2_data.clone(),
         ))
     }
 
     fn xmin(&self) -> f64 {
-        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+        self.xdata.clone().fold(f64::INFINITY, |a, b| a.min(b))
     }
     fn xmax(&self) -> f64 {
-        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+        self.xdata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
     }
     fn ymin(&self) -> f64 {
         f64::min(
-            self.y1_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
-            self.y2_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
+            self.y1_data.clone().fold(f64::INFINITY, |a, b| a.min(b)),
+            self.y2_data.clone().fold(f64::INFINITY, |a, b| a.min(b)),
         )
     }
     fn ymax(&self) -> f64 {
         f64::max(
-            self.y1_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
-            self.y2_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
+            self.y1_data.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b)),
+            self.y2_data.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b)),
         )
     }
 }
-impl<'x, 'y1, 'y2> FillBetweenData<'x, 'y1, 'y2> {
+impl<Ix, Iy1, Iy2> FillBetweenData<Ix, Iy1, Iy2>
+where
+    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
+{
     /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new<
-        Xs: Into<ndarray::ArrayView1<'x, f64>>,
-        Y1s: Into<ndarray::ArrayView1<'y1, f64>>,
-        Y2s: Into<ndarray::ArrayView1<'y2, f64>>,
-    >(
-        xs: Xs,
-        y1s: Y1s,
-        y2s: Y2s,
-    ) -> Self {
-        let xdata = xs.into();
-        let y1_data = y1s.into();
-        let y2_data = y2s.into();
-
-        Self { xdata, y1_data, y2_data }
-    }
-}
-
-/// Holds owned data describing an area to be filled.
-#[derive(Clone, Debug)]
-pub(crate) struct FillBetweenDataOwned {
-    xdata: ndarray::Array1<f64>,
-    y1_data: ndarray::Array1<f64>,
-    y2_data: ndarray::Array1<f64>,
-}
-impl Default for FillBetweenDataOwned {
-    fn default() -> Self {
-        Self {
-            xdata: ndarray::Array1::<f64>::default(0),
-            y1_data: ndarray::Array1::<f64>::default(0),
-            y2_data: ndarray::Array1::<f64>::default(0),
-        }
-    }
-}
-impl FillData for FillBetweenDataOwned {
-    fn curve1<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.y1_data.iter().cloned(),
-        ))
-    }
-
-    fn curve2<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.xdata.iter().cloned(),
-            self.y2_data.iter().cloned(),
-        ))
-    }
-
-    fn xmin(&self) -> f64 {
-        self.xdata.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.xdata.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        f64::min(
-            self.y1_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
-            self.y2_data.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
-        )
-    }
-    fn ymax(&self) -> f64 {
-        f64::max(
-            self.y1_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
-            self.y2_data.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
-        )
-    }
-}
-impl FillBetweenDataOwned {
-    /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new<
-        Xs: Into<ndarray::Array1<f64>>,
-        Y1s: Into<ndarray::Array1<f64>>,
-        Y2s: Into<ndarray::Array1<f64>>,
-    >(
-        xs: Xs,
-        y1s: Y1s,
-        y2s: Y2s,
+    pub fn new(
+        xs: Ix,
+        y1s: Iy1,
+        y2s: Iy2,
     ) -> Self {
         let xdata = xs.into();
         let y1_data = y1s.into();
