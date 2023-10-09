@@ -327,6 +327,16 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+    /// Sets the x-axis label.
+    /// Shortcut for calling `.label(Axes::X, label)`.
+    pub fn xlabel(self, label: &'a str) -> Self {
+        self.label(Axes::X, label)
+    }
+    /// Sets the y-axis label.
+    /// Shortcut for calling `.label(Axes::Y, label)`.
+    pub fn ylabel(self, label: &'a str) -> Self {
+        self.label(Axes::Y, label)
+    }
 
     /// Sets axis limits.
     pub fn limits(mut self, axes: Axes, limits: Limits) -> Self {
@@ -341,6 +351,16 @@ impl<'a> SubplotBuilder<'a> {
 
         self
     }
+    /// Sets the x-axis limits.
+    /// Shortcut for calling `.limits(Axes::X, limits)`.
+    pub fn xlimits(self, limits: Limits) -> Self {
+        self.limits(Axes::X, limits)
+    }
+    /// Sets the y-axis limits.
+    /// Shortcut for calling `.limits(Axes::Y, limits)`.
+    pub fn ylimits(self, limits: Limits) -> Self {
+        self.limits(Axes::Y, limits)
+    }
 
     /// Sets axis grid settings.
     pub fn grid(mut self, axes: Axes, grid: Grid) -> Self {
@@ -350,6 +370,11 @@ impl<'a> SubplotBuilder<'a> {
         }
 
         self
+    }
+    /// Turns on the major tick mark grid for the primary axes.
+    /// Shortcut for calling `.grid(Axes::BothPrimary, Grid::Major)`.
+    pub fn standard_grid(self) -> Self {
+        self.grid(Axes::BothPrimary, Grid::Major)
     }
 
     /// Sets major tick mark locations.
