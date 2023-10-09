@@ -46,9 +46,9 @@ impl<'a> GridLayout<'a> {
                 let col = index % ncols;
 
                 let xmin = xextent * col as f64;
-                let xmax = xmin as f64 + xextent;
+                let xmax = xmin + xextent;
                 let ymin = yextent * (nrows - 1 - row) as f64;
-                let ymax = ymin as f64 + yextent;
+                let ymax = ymin + yextent;
 
                 FractionalArea { xmin, xmax, ymin, ymax }
             })
@@ -80,9 +80,9 @@ impl<'a> GridLayout<'a> {
                 let col = index % ncols;
 
                 let xmin = xextent * col as f64;
-                let xmax = xmin as f64 + xextent;
+                let xmax = xmin + xextent;
                 let ymin = yextent * (nrows - 1 - row) as f64;
-                let ymax = ymin as f64 + yextent;
+                let ymax = ymin + yextent;
 
                 FractionalArea { xmin, xmax, ymin, ymax }
             })

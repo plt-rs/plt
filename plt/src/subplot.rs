@@ -1441,11 +1441,11 @@ where
         y1s: Iy1,
         y2s: Iy2,
     ) -> Self {
-        let xdata = xs.into();
-        let y1_data = y1s.into();
-        let y2_data = y2s.into();
-
-        Self { xdata, y1_data, y2_data }
+        Self {
+            xdata: xs,
+            y1_data: y1s,
+            y2_data: y2s,
+        }
     }
 }
 

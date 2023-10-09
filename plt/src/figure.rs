@@ -593,9 +593,9 @@ fn draw_subplot<B: backend::Canvas>(
                 let major_tick_delta = (span.1 - span.0) / (major_ticks.len() - 1) as f64;
                 let minor_tick_delta = major_tick_delta / (nticks_per_major + 1) as f64;
 
-                let nticks_before_first = ((span.0 - limits.0) as f64 / minor_tick_delta).floor();
+                let nticks_before_first = ((span.0 - limits.0) / minor_tick_delta).floor();
                 let start = span.0 - (nticks_before_first * minor_tick_delta);
-                let nticks = ((limits.1 - start) as f64 / minor_tick_delta).floor() as usize + 1;
+                let nticks = ((limits.1 - start) / minor_tick_delta).floor() as usize + 1;
 
             (0..nticks)
                 .map(|n| start + (minor_tick_delta * n as f64))
@@ -1086,10 +1086,10 @@ fn draw_subplot<B: backend::Canvas>(
 
         // draw tick label modifiers if necessary
         let mult_offset_text = if axis.label_multiplier != 0 && axis.label_offset != 0.0 {
-            let exponent = superscript(axis.label_multiplier as i32);
+            let exponent = superscript(axis.label_multiplier);
             format!("x10{} + {}", exponent, axis.label_offset)
         } else if axis.label_multiplier != 0 {
-            let exponent = superscript(axis.label_multiplier as i32);
+            let exponent = superscript(axis.label_multiplier);
             format!("x10{}", exponent)
         } else if axis.label_offset != 0.0 {
             format!("+ {}", axis.label_offset)
