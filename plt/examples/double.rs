@@ -8,10 +8,10 @@ fn main() {
 
     // create subplot
     let mut sp = Subplot::builder()
-        .title("double plot")
-        .label(Axes::X, "x data")
-        .label(Axes::Y, "y1 data")
-        .label(Axes::SecondaryY, "y2 data")
+        .title("Double Plot")
+        .label(Axes::X, "X")
+        .label(Axes::Y, "Y1")
+        .label(Axes::SecondaryY, "Y2")
         .build();
 
     // plot data on primary y-axis

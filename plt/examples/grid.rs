@@ -57,8 +57,8 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         })
-        .limits(Axes::X, Limits::Manual { min: -6.0, max: 6.0 })
-        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 500.0 })
+        .xlimits(Limits::Manual { min: -6.0, max: 6.0 })
+        .ylimits(Limits::Manual { min: 0.0, max: 500.0 })
         .minor_tick_marks(Axes::BothPrimary, TickSpacing::Count(1))
         .major_tick_marks(Axes::BothSecondary, TickSpacing::None)
         .minor_tick_marks(Axes::BothSecondary, TickSpacing::None)
@@ -77,8 +77,8 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         })
-        .limits(Axes::X, Limits::Manual { min: -6.0, max: 6.0 })
-        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 500.0 })
+        .xlimits(Limits::Manual { min: -6.0, max: 6.0 })
+        .ylimits(Limits::Manual { min: 0.0, max: 500.0 })
         .minor_tick_marks(Axes::BothPrimary, TickSpacing::Count(1))
         .major_tick_marks(Axes::BothSecondary, TickSpacing::None)
         .minor_tick_marks(Axes::BothSecondary, TickSpacing::None)

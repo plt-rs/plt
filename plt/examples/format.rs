@@ -24,9 +24,9 @@ fn main() {
             plot_color: Color { r: 0.0, g: 0.1, b: 0.3, a: 0.2 },
             ..Default::default()
         })
-        .label(Axes::X, "x data")
-        .label(Axes::Y, "y data")
-        .grid(Axes::BothPrimary, Grid::Major)
+        .xlabel("X")
+        .ylabel("Y")
+        .standard_grid()
         .build();
 
     subplot.plotter()

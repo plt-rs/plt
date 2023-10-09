@@ -23,18 +23,17 @@ fn main() {
             font_size: 16.0,
             ..Default::default()
         })
-        .label(Axes::X, "x [arbitrary units]")
-        //.limits(Axes::X, Limits::Manual { min: 0.0, max: 10.0 })
-        .label(Axes::Y, "y [arbitrary units]")
-        //.limits(Axes::Y, Limits::Manual { min: 0.0, max: 1e3 })
-        .grid(Axes::BothPrimary, Grid::Major)
+        .xlabel("X [arbitrary units]")
+        .ylabel("Y [arbitrary units]")
+        .xlimits(Limits::Manual { min: 0.0, max: 10.0 })
+        .ylimits(Limits::Manual { min: 0.0, max: 1e3 })
+        .standard_grid()
         .build();
 
     // plot true line
     subplot.fill_between(&xs, &upper_errors, &lower_errors).unwrap();
     subplot.plotter()
         .line(Some(LineStyle::Dashed))
-        .label("true curve")
         .plot(&xs, &line_ys)
         .unwrap();
 
@@ -45,7 +44,6 @@ fn main() {
         .marker_color(Color::TRANSPARENT)
         .marker_outline(true)
         .marker_outline_color(Color::BLACK)
-        .label("data")
         .plot(&xs, &scatter_ys)
         .unwrap();
 

@@ -6,8 +6,8 @@ fn main() {
 
     // create subplot
     let mut subplot = Subplot::builder()
-        .label(Axes::X, "x data")
-        .label(Axes::Y, "y data")
+        .xlabel("X")
+        .ylabel("Y")
         .build();
 
     // plot data
