@@ -1,7 +1,7 @@
 use crate::backend;
 use crate::layout::{FractionalArea, Layout};
 use crate::subplot::{
-    AxisType, Grid, Line, LineStyle, MarkerStyle, Subplot, TickDirection, TickLabels, TickSpacing,
+    AxisType, Grid, Line, LineStyle, MarkerStyle, PlotType, Subplot, TickDirection, TickLabels, TickSpacing,
 };
 use crate::{Color, FileFormat, PltError};
 
@@ -869,7 +869,7 @@ fn draw_subplot<B: backend::Canvas>(
     // draw all data sets in the order called
     for plot_type in subplot.plot_order.iter() { match plot_type {
         // draw series data
-        crate::subplot::PlotType::Series => {
+        PlotType::Series => {
             let plot_info = plot_info_iter.next().unwrap();
 
             let xlim = finalized_axes[&plot_info.xaxis].limits;
@@ -991,7 +991,7 @@ fn draw_subplot<B: backend::Canvas>(
             }
         }
         // draw fill data
-        crate::subplot::PlotType::Fill => {
+        PlotType::Fill => {
             let fill_info = fill_info_iter.next().unwrap();
 
             let xlim = finalized_axes[&fill_info.xaxis].limits;
