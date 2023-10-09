@@ -365,8 +365,8 @@ impl draw::Canvas for CairoCanvas {
                         // configure encoder
                         let mut encoder = png::Encoder::new(
                             w,
-                            self.size.width as u32,
-                            self.size.height as u32,
+                            self.size.width,
+                            self.size.height,
                         );
                         encoder.set_color(png::ColorType::Rgba);
                         encoder.set_depth(png::BitDepth::Eight);
