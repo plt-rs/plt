@@ -37,9 +37,9 @@ impl<'a> Subplot<'a> {
         }
     }
 
-    /// Plots borrowed X, Y data on this subplot with default plot formatting.
+    /// Plots X, Y data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().plot()` on a [`Subplot`].
-    pub fn plot<'x: 'a, 'y: 'a, Xs, Ys, Fx, Fy>(
+    pub fn plot<Xs, Ys, Fx, Fy>(
         &mut self,
         xs: Xs,
         ys: Ys,
@@ -60,9 +60,9 @@ impl<'a> Subplot<'a> {
         plotter.plot(xs, ys)
     }
 
-    /// Plots borrowed step plot data on this subplot with default plot formatting.
+    /// Plots step plot data on this subplot with default plot formatting.
     /// Shortcut for calling `.plotter().step()` on a [`Subplot`].
-    pub fn step<'x: 'a, 'y:'a, Xs, Ys, Fx, Fy>(
+    pub fn step<Xs, Ys, Fx, Fy>(
         &mut self,
         steps: Xs,
         ys: Ys,
@@ -85,17 +85,7 @@ impl<'a> Subplot<'a> {
 
     /// Fills an area between two curves on the subplot with default formatting.
     /// Shortcut for calling `.filler().fill_between()` on a [`Subplot`].
-    pub fn fill_between<
-        'x: 'a,
-        'y1: 'a,
-        'y2: 'a,
-        Xs,
-        Y1s,
-        Y2s,
-        Fx,
-        Fy1,
-        Fy2,
-    >(
+    pub fn fill_between<Xs, Y1s, Y2s, Fx, Fy1, Fy2>(
         &mut self,
         xs: Xs,
         y1s: Y1s,
@@ -108,9 +98,12 @@ impl<'a> Subplot<'a> {
         Xs: IntoIterator<Item=Fx>,
         Y1s: IntoIterator<Item=Fy1>,
         Y2s: IntoIterator<Item=Fy2>,
-        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
-        <Y1s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
-        <Y2s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
+        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator
+            + iter::DoubleEndedIterator + Clone + 'a,
+        <Y1s as IntoIterator>::IntoIter: iter::ExactSizeIterator
+            + iter::DoubleEndedIterator + Clone + 'a,
+        <Y2s as IntoIterator>::IntoIter: iter::ExactSizeIterator
+            + iter::DoubleEndedIterator + Clone + 'a,
     {
         let filler = Filler {
             subplot: self,
@@ -628,7 +621,7 @@ pub struct Plotter<'a, 'b> {
 }
 impl<'a, 'b> Plotter<'a, 'b> {
     /// Borrows data to be plotted and consumes the plotter.
-    pub fn plot<'x: 'a, 'y: 'a, Xs, Ys, Fx, Fy>(
+    pub fn plot<Xs, Ys, Fx, Fy>(
         self,
         xs: Xs,
         ys: Ys,
@@ -662,7 +655,7 @@ impl<'a, 'b> Plotter<'a, 'b> {
     }
 
     /// Borrows step data to be plotted and consumes the plotter.
-    pub fn step<'x: 'a, 'y: 'a, Xs, Ys, Fx, Fy>(
+    pub fn step<Xs, Ys, Fx, Fy>(
         mut self,
         steps: Xs,
         ys: Ys,
@@ -813,17 +806,7 @@ pub struct Filler<'a, 'b> {
 }
 impl<'a, 'b> Filler<'a, 'b> {
     /// Fills an area between two curves on the subplot.
-    pub fn fill_between<
-        'x: 'a,
-        'y1: 'a,
-        'y2: 'a,
-        Xs,
-        Y1s,
-        Y2s,
-        Fx,
-        Fy1,
-        Fy2,
-    >(
+    pub fn fill_between<Xs, Y1s, Y2s, Fx, Fy1, Fy2>(
         self,
         xs: Xs,
         y1s: Y1s,
@@ -1265,7 +1248,7 @@ impl IntoF64 for &i32 {
     }
 }
 
-/// Holds borrowed data to be plotted.
+/// Holds data to be plotted.
 #[derive(Copy, Clone)]
 pub(crate) struct PlotData<Ix, Iy>
 where
