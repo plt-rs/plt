@@ -5,22 +5,22 @@ use crate::PltError;
 use crate::figure::Figure;
 
 /// Defines how and where Subplots are place in a [`Figure`].
-pub trait Layout<'a> {
-    fn subplots(self) -> Vec<(Subplot<'a>, FractionalArea)>;
+pub trait Layout {
+    fn subplots(self) -> Vec<(Subplot, FractionalArea)>;
 }
 
 /// A [`Layout`] in which a single subplot fills the whole figure.
-pub struct SingleLayout<'a> {
-    subplot: Subplot<'a>,
+pub struct SingleLayout {
+    subplot: Subplot,
 }
-impl<'a> SingleLayout<'a> {
+impl SingleLayout {
     /// The main constructor, setting the subplot.
-    pub fn new(subplot: Subplot<'a>) -> Self {
+    pub fn new(subplot: Subplot) -> Self {
         Self { subplot }
     }
 }
-impl<'a> Layout<'a> for SingleLayout<'a> {
-    fn subplots(self) -> Vec<(Subplot<'a>, FractionalArea)> {
+impl Layout for SingleLayout {
+    fn subplots(self) -> Vec<(Subplot, FractionalArea)> {
         vec![(
             self.subplot,
             FractionalArea { xmin: 0.0, xmax: 1.0, ymin: 0.0, ymax: 1.0},
@@ -29,12 +29,12 @@ impl<'a> Layout<'a> for SingleLayout<'a> {
 }
 
 /// A [`Layout`] in which subplots are placed in a grid orientation in the figure.
-pub struct GridLayout<'a> {
-    subplots: ndarray::Array2<Subplot<'a>>,
+pub struct GridLayout {
+    subplots: ndarray::Array2<Subplot>,
     areas: ndarray::Array2<FractionalArea>,
     mask: ndarray::Array2<bool>,
 }
-impl<'a> GridLayout<'a> {
+impl GridLayout {
     /// Creates an empty layout.
     pub fn new(nrows: usize, ncols: usize) -> Self {
         let xextent = 1.0 / ncols as f64;
@@ -65,7 +65,7 @@ impl<'a> GridLayout<'a> {
         }
     }
     /// Creates a uniform grid layout from a 2D array, filling only the spots with [`Some`] subplot.
-    pub fn from_array<A: Into<ndarray::Array2<Option<Subplot<'a>>>>>(subplots: A) -> Self {
+    pub fn from_array<A: Into<ndarray::Array2<Option<Subplot>>>>(subplots: A) -> Self {
         let subplots = subplots.into();
 
         let nrows = subplots.nrows();
@@ -104,7 +104,7 @@ impl<'a> GridLayout<'a> {
     pub fn insert(
         &mut self,
         (row, col): (usize, usize),
-        subplot: Subplot<'a>,
+        subplot: Subplot,
     ) -> Result<(), PltError> {
         if (row + 1) > self.subplots.nrows() {
             return Err(PltError::InvalidRow { row, nrows: self.subplots.nrows() });
@@ -119,8 +119,8 @@ impl<'a> GridLayout<'a> {
         Ok(())
     }
 }
-impl<'a> Layout<'a> for GridLayout<'a> {
-    fn subplots(self) -> Vec<(Subplot<'a>, FractionalArea)> {
+impl Layout for GridLayout {
+    fn subplots(self) -> Vec<(Subplot, FractionalArea)> {
         Iterator::zip(
             self.subplots.indexed_iter().filter_map(|(index, subplot)|
                 if self.mask[index] { Some(subplot) } else { None }

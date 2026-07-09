@@ -1,28 +1,28 @@
 use crate::{Color, FontName, PltError};
 
-use std::{array, fmt::{self, Formatter}, f64, iter};
+use std::{array, f64, iter};
 
 /// The object that represents a whole subplot and is used to draw plotted data.
 #[derive(Clone, Debug)]
-pub struct Subplot<'a> {
+pub struct Subplot {
     pub(crate) format: SubplotFormat,
     pub(crate) plot_order: Vec<PlotType>,
-    pub(crate) plot_infos: Vec<PlotInfo<'a>>,
-    pub(crate) fill_infos: Vec<FillInfo<'a>>,
+    pub(crate) plot_infos: Vec<PlotInfo>,
+    pub(crate) fill_infos: Vec<FillInfo>,
     pub(crate) title: String,
-    pub(crate) xaxis: AxisBuf,
-    pub(crate) yaxis: AxisBuf,
-    pub(crate) secondary_xaxis: AxisBuf,
-    pub(crate) secondary_yaxis: AxisBuf,
+    pub(crate) xaxis: AxisDescriptor,
+    pub(crate) yaxis: AxisDescriptor,
+    pub(crate) secondary_xaxis: AxisDescriptor,
+    pub(crate) secondary_yaxis: AxisDescriptor,
 }
-impl<'a> Subplot<'a> {
+impl Subplot {
     /// Returns a builder with default settings for constructing a subplot.
-    pub fn builder() -> SubplotBuilder<'a> {
+    pub fn builder() -> SubplotBuilder {
         SubplotBuilder { desc: SubplotDescriptor::default() }
     }
 
     /// Returns a [`Plotter`] for plotting X, Y data on this subplot.
-    pub fn plotter<'b>(&'b mut self) -> Plotter<'a, 'b> {
+    pub fn plotter(&mut self) -> Plotter<'_> {
         Plotter {
             subplot: self,
             desc: PlotDescriptor::default(),
@@ -30,7 +30,7 @@ impl<'a> Subplot<'a> {
     }
 
     /// Returns a [`Filler`] for filling a region of the subplot with a color.
-    pub fn filler<'b>(&'b mut self) -> Filler<'a, 'b> {
+    pub fn filler(&mut self) -> Filler<'_> {
         Filler {
             subplot: self,
             desc: FillDescriptor::default(),
@@ -49,8 +49,6 @@ impl<'a> Subplot<'a> {
         Fy: IntoF64,
         Xs: IntoIterator<Item=Fx>,
         Ys: IntoIterator<Item=Fy>,
-        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
-        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
     {
         let plotter = Plotter {
             subplot: self,
@@ -72,8 +70,6 @@ impl<'a> Subplot<'a> {
         Fy: IntoF64,
         Xs: IntoIterator<Item=Fx>,
         Ys: IntoIterator<Item=Fy>,
-        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
-        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
     {
         let plotter = Plotter {
             subplot: self,
@@ -98,12 +94,6 @@ impl<'a> Subplot<'a> {
         Xs: IntoIterator<Item=Fx>,
         Y1s: IntoIterator<Item=Fy1>,
         Y2s: IntoIterator<Item=Fy2>,
-        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator
-            + iter::DoubleEndedIterator + Clone + 'a,
-        <Y1s as IntoIterator>::IntoIter: iter::ExactSizeIterator
-            + iter::DoubleEndedIterator + Clone + 'a,
-        <Y2s as IntoIterator>::IntoIter: iter::ExactSizeIterator
-            + iter::DoubleEndedIterator + Clone + 'a,
     {
         let filler = Filler {
             subplot: self,
@@ -118,7 +108,7 @@ impl<'a> Subplot<'a> {
         &self.format
     }
 }
-impl<'a> Subplot<'a> {
+impl Subplot {
     /// Internal constructor.
     pub(crate) fn new(desc: &SubplotDescriptor) -> Self {
         Self {
@@ -126,20 +116,20 @@ impl<'a> Subplot<'a> {
             plot_order: vec![],
             plot_infos: vec![],
             fill_infos: vec![],
-            title: desc.title.to_string(),
-            xaxis: desc.xaxis.to_buf(),
-            yaxis: desc.yaxis.to_buf(),
-            secondary_xaxis: desc.secondary_xaxis.to_buf(),
-            secondary_yaxis: desc.secondary_yaxis.to_buf(),
+            title: desc.title.clone(),
+            xaxis: desc.xaxis.clone(),
+            yaxis: desc.yaxis.clone(),
+            secondary_xaxis: desc.secondary_xaxis.clone(),
+            secondary_yaxis: desc.secondary_yaxis.clone(),
         }
     }
 }
-impl<'a> Subplot<'a> {
+impl Subplot {
     /// Internal plot setup function.
-    fn plot_desc<D: SeriesData + Clone + 'a>(
+    fn plot_desc(
         &mut self,
         desc: PlotDescriptor,
-        data: D,
+        data: SeriesData,
     ) {
         let line = if desc.line {
             Some(desc.line_format)
@@ -208,7 +198,7 @@ impl<'a> Subplot<'a> {
 
         self.plot_infos.push(PlotInfo {
             label: desc.label.to_string(),
-            data: Box::new(data),
+            data,
             line,
             marker,
             xaxis: desc.xaxis,
@@ -219,10 +209,10 @@ impl<'a> Subplot<'a> {
     }
 
     /// Internal fill between setup function.
-    fn fill_between_desc<D: FillData + 'a>(
+    fn fill_between_desc(
         &mut self,
         desc: FillDescriptor,
-        data: D,
+        data: FillData,
     ) {
         let xaxis = match desc.xaxis {
             AxisType::X => &mut self.xaxis,
@@ -280,7 +270,7 @@ impl<'a> Subplot<'a> {
 
         self.fill_infos.push(FillInfo {
             label: desc.label.to_string(),
-            data: Box::new(data),
+            data,
             color_override: desc.color_override,
             xaxis: desc.xaxis,
             yaxis: desc.yaxis,
@@ -290,18 +280,18 @@ impl<'a> Subplot<'a> {
 }
 
 /// Builds and sets the configuration for a [`Subplot`].
-pub struct SubplotBuilder<'a> {
-    desc: SubplotDescriptor<'a>,
+pub struct SubplotBuilder {
+    desc: SubplotDescriptor,
 }
-impl<'a> SubplotBuilder<'a> {
+impl SubplotBuilder {
     /// Builds the subplot.
-    pub fn build(self) -> Subplot<'a> {
+    pub fn build(self) -> Subplot {
         Subplot::new(&self.desc)
     }
 
     /// Sets the title of the subplot.
-    pub fn title(mut self, title: &'a str) -> Self {
-        self.desc.title = title;
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.desc.title = title.into();
         self
     }
 
@@ -312,22 +302,23 @@ impl<'a> SubplotBuilder<'a> {
     }
 
     /// Sets axis labels.
-    pub fn label(mut self, axes: Axes, label: &'a str) -> Self {
+    pub fn label(mut self, axes: Axes, label: impl Into<String>) -> Self {
+        let label = label.into();
         let axes = self.axes(axes);
         for axis in axes {
-            axis.label = label;
+            axis.label = label.clone();
         }
 
         self
     }
     /// Sets the x-axis label.
     /// Shortcut for calling `.label(Axes::X, label)`.
-    pub fn xlabel(self, label: &'a str) -> Self {
+    pub fn xlabel(self, label: impl Into<String>) -> Self {
         self.label(Axes::X, label)
     }
     /// Sets the y-axis label.
     /// Shortcut for calling `.label(Axes::Y, label)`.
-    pub fn ylabel(self, label: &'a str) -> Self {
+    pub fn ylabel(self, label: impl Into<String>) -> Self {
         self.label(Axes::Y, label)
     }
 
@@ -420,8 +411,8 @@ impl<'a> SubplotBuilder<'a> {
         self
     }
 }
-impl<'a> SubplotBuilder<'a> {
-    fn axes<'b>(&'b mut self, axes: Axes) -> Vec<&'b mut AxisDescriptor<&'a str>> {
+impl SubplotBuilder {
+    fn axes(&mut self, axes: Axes) -> Vec<&mut AxisDescriptor> {
         match axes {
             Axes::X => vec![&mut self.desc.xaxis],
             Axes::Y => vec![&mut self.desc.yaxis],
@@ -615,12 +606,12 @@ pub enum Limits {
 }
 
 /// Plots data on a subplot using the builder pattern.
-pub struct Plotter<'a, 'b> {
-    subplot: &'b mut Subplot<'a>,
+pub struct Plotter<'b> {
+    subplot: &'b mut Subplot,
     desc: PlotDescriptor,
 }
-impl<'a, 'b> Plotter<'a, 'b> {
-    /// Borrows data to be plotted and consumes the plotter.
+impl<'b> Plotter<'b> {
+    /// Takes data to be plotted and consumes the plotter.
     pub fn plot<Xs, Ys, Fx, Fy>(
         self,
         xs: Xs,
@@ -631,30 +622,28 @@ impl<'a, 'b> Plotter<'a, 'b> {
         Fy: IntoF64,
         Xs: IntoIterator<Item=Fx>,
         Ys: IntoIterator<Item=Fy>,
-        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
-        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
     {
-        let xdata = xs.into_iter().map(|f| f.f64());
-        let ydata = ys.into_iter().map(|f| f.f64());
+        let xdata: Vec<f64> = xs.into_iter().map(|f| f.f64()).collect();
+        let ydata: Vec<f64> = ys.into_iter().map(|f| f.f64()).collect();
 
         if xdata.len() != ydata.len() {
             return Err(PltError::InvalidData(
                 "Data is not correctly sized. x-data and y-data should be same length".to_owned()
             ));
-        } else if xdata.clone().any(|x| x.is_nan()) {
+        } else if xdata.iter().any(|x| x.is_nan()) {
             return Err(PltError::InvalidData("x-data has NaN value".to_owned()));
-        } else if ydata.clone().any(|y| y.is_nan()) {
+        } else if ydata.iter().any(|y| y.is_nan()) {
             return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
         }
 
-        let data = PlotData::new(xdata, ydata);
+        let data = SeriesData::new_series(xdata, ydata);
 
         self.subplot.plot_desc(self.desc, data);
 
         Ok(())
     }
 
-    /// Borrows step data to be plotted and consumes the plotter.
+    /// Takes step data to be plotted and consumes the plotter.
     pub fn step<Xs, Ys, Fx, Fy>(
         mut self,
         steps: Xs,
@@ -665,25 +654,23 @@ impl<'a, 'b> Plotter<'a, 'b> {
         Fy: IntoF64,
         Xs: IntoIterator<Item=Fx>,
         Ys: IntoIterator<Item=Fy>,
-        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
-        <Ys as IntoIterator>::IntoIter: iter::ExactSizeIterator + Clone + 'a,
     {
-        let step_data = steps.into_iter().map(|f| f.f64());
-        let ydata = ys.into_iter().map(|f| f.f64());
+        let step_data: Vec<f64> = steps.into_iter().map(|f| f.f64()).collect();
+        let ydata: Vec<f64> = ys.into_iter().map(|f| f.f64()).collect();
 
         if step_data.len() != ydata.len() + 1 {
             return Err(PltError::InvalidData(
                 "Data is not correctly sized. There should be one more step than y-value".to_owned()
             ));
-        } else if step_data.clone().any(|step| step.is_nan()) {
+        } else if step_data.iter().any(|step| step.is_nan()) {
             return Err(PltError::InvalidData("step-data has NaN value".to_owned()));
-        } else if ydata.clone().any(|y| y.is_nan()) {
+        } else if ydata.iter().any(|y| y.is_nan()) {
             return Err(PltError::InvalidData("y-data has NaN value".to_owned()));
         }
 
         self.desc.pixel_perfect = true;
 
-        let data = StepData::new(step_data, ydata);
+        let data = SeriesData::new_step(step_data, ydata);
 
         self.subplot.plot_desc(self.desc, data);
 
@@ -800,11 +787,11 @@ impl<'a, 'b> Plotter<'a, 'b> {
 }
 
 /// Fills a region of a subplot with a color.
-pub struct Filler<'a, 'b> {
-    subplot: &'b mut Subplot<'a>,
+pub struct Filler<'b> {
+    subplot: &'b mut Subplot,
     desc: FillDescriptor,
 }
-impl<'a, 'b> Filler<'a, 'b> {
+impl<'b> Filler<'b> {
     /// Fills an area between two curves on the subplot.
     pub fn fill_between<Xs, Y1s, Y2s, Fx, Fy1, Fy2>(
         self,
@@ -819,15 +806,12 @@ impl<'a, 'b> Filler<'a, 'b> {
         Xs: IntoIterator<Item=Fx>,
         Y1s: IntoIterator<Item=Fy1>,
         Y2s: IntoIterator<Item=Fy2>,
-        <Xs as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
-        <Y1s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
-        <Y2s as IntoIterator>::IntoIter: iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone + 'a,
     {
         let xdata = xs.into_iter().map(|f| f.f64());
         let y1data = y1s.into_iter().map(|f| f.f64());
         let y2data = y2s.into_iter().map(|f| f.f64());
 
-        let data = FillBetweenData::new(xdata, y1data, y2data);
+        let data = FillData::new(xdata, y1data, y2data);
 
         self.subplot.fill_between_desc(self.desc, data);
 
@@ -884,27 +868,27 @@ pub enum MarkerStyle {
 
 /// Describes the configuration of a [`Subplot`].
 #[derive(Clone, Debug)]
-pub(crate) struct SubplotDescriptor<'a> {
+pub(crate) struct SubplotDescriptor {
     /// The format of this subplot.
     pub format: SubplotFormat,
     /// The title displayed at the top of this subplot.
-    pub title: &'a str,
+    pub title: String,
     /// The default axis corresponding to x-values.
-    pub xaxis: AxisDescriptor<&'a str>,
+    pub xaxis: AxisDescriptor,
     /// The default axis corresponding to y-values.
-    pub yaxis: AxisDescriptor<&'a str>,
+    pub yaxis: AxisDescriptor,
     /// The secondary axis corresponding to x-values.
-    pub secondary_xaxis: AxisDescriptor<&'a str>,
+    pub secondary_xaxis: AxisDescriptor,
     /// The secondary axis corresponding to y-values.
-    pub secondary_yaxis: AxisDescriptor<&'a str>,
+    pub secondary_yaxis: AxisDescriptor,
 }
-impl Default for SubplotDescriptor<'_> {
+impl Default for SubplotDescriptor {
     fn default() -> Self {
         Self {
             format: SubplotFormat::default(),
-            title: "",
+            title: String::new(),
             xaxis: AxisDescriptor {
-                label: "",
+                label: String::new(),
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
                 minor_tick_marks: TickSpacing::On,
@@ -916,7 +900,7 @@ impl Default for SubplotDescriptor<'_> {
                 visible: true,
             },
             yaxis: AxisDescriptor {
-                label: "",
+                label: String::new(),
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
                 minor_tick_marks: TickSpacing::On,
@@ -928,7 +912,7 @@ impl Default for SubplotDescriptor<'_> {
                 visible: true,
             },
             secondary_xaxis: AxisDescriptor {
-                label: "",
+                label: String::new(),
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
                 minor_tick_marks: TickSpacing::On,
@@ -940,7 +924,7 @@ impl Default for SubplotDescriptor<'_> {
                 visible: true,
             },
             secondary_yaxis: AxisDescriptor {
-                label: "",
+                label: String::new(),
                 major_tick_marks: TickSpacing::On,
                 major_tick_labels: TickLabels::Auto,
                 minor_tick_marks: TickSpacing::On,
@@ -1071,9 +1055,9 @@ impl Default for Marker {
 
 /// Configuration for an axis.
 #[derive(Clone, Debug)]
-pub(crate) struct AxisDescriptor<S: AsRef<str>> {
+pub(crate) struct AxisDescriptor {
     /// The label desplayed by the axis.
-    pub label: S,
+    pub label: String,
     /// Determines the major tick mark locations on this axis.
     pub major_tick_marks: TickSpacing,
     /// Determines the major tick labels on this axis.
@@ -1107,30 +1091,12 @@ impl AxisType {
     }
 }
 
-pub(crate) type AxisBuf = AxisDescriptor<String>;
-impl<S: AsRef<str>> AxisDescriptor<S> {
-    fn to_buf(&self) -> AxisBuf {
-        AxisBuf {
-            label: self.label.as_ref().to_string(),
-            major_tick_marks: self.major_tick_marks.clone(),
-            major_tick_labels: self.major_tick_labels.clone(),
-            minor_tick_marks: self.minor_tick_marks.clone(),
-            minor_tick_labels: self.minor_tick_labels.clone(),
-            grid: self.grid,
-            limit_policy: self.limit_policy,
-            limits: self.limits,
-            span: self.span,
-            visible: self.visible,
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
-pub(crate) struct PlotInfo<'a> {
+pub(crate) struct PlotInfo {
     // TODO implement legend
     #[allow(dead_code)]
     pub label: String,
-    pub data: Box<dyn SeriesData + 'a>,
+    pub data: SeriesData,
     pub line: Option<Line>,
     pub marker: Option<Marker>,
     pub xaxis: AxisType,
@@ -1139,10 +1105,10 @@ pub(crate) struct PlotInfo<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct FillInfo<'a> {
+pub(crate) struct FillInfo {
     #[allow(dead_code)]
     pub label: String,
-    pub data: Box<dyn FillData + 'a>,
+    pub data: FillData,
     pub color_override: Option<Color>,
     pub xaxis: AxisType,
     pub yaxis: AxisType,
@@ -1248,238 +1214,134 @@ impl IntoF64 for &i32 {
     }
 }
 
-/// Holds data to be plotted.
-#[derive(Copy, Clone)]
-pub(crate) struct PlotData<Ix, Iy>
-where
-    Ix: Iterator<Item=f64> + Clone,
-    Iy: Iterator<Item=f64> + Clone,
-{
-    xdata: Ix,
-    ydata: Iy,
+/// Holds series data to be plotted.
+#[derive(Clone, Debug)]
+pub(crate) enum SeriesData {
+    Series { xdata: Vec<f64>, ydata: Vec<f64> },
+    Step { edges: Vec<f64>, ydata: Vec<f64> },
 }
-impl<Ix, Iy> fmt::Debug for PlotData<Ix, Iy> 
-where
-    Ix: Iterator<Item=f64> + Clone,
-    Iy: Iterator<Item=f64> + Clone,
-{
-    fn fmt(&self, _: &mut Formatter) -> Result<(), fmt::Error> {
-        Ok(())
-    }
-}
-impl<Ix, Iy> SeriesData for PlotData<Ix, Iy> 
-where
-    Ix: Iterator<Item=f64> + Clone,
-    Iy: Iterator<Item=f64> + Clone,
-{
-    fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.xdata.clone(),
-            self.ydata.clone(),
-        ))
-    }
-
-    fn xmin(&self) -> f64 {
-        self.xdata.clone().fold(f64::INFINITY, |a, b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.xdata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.clone().fold(f64::INFINITY, |a, b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
-    }
-}
-impl<Ix, Iy> PlotData<Ix, Iy>
-where
-    Ix: Iterator<Item=f64> + Clone,
-    Iy: Iterator<Item=f64> + Clone,
-{
-    /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new(
-        xs: Ix,
-        ys: Iy,
+impl SeriesData {
+    /// Main constructor for line/marker series data, taking x-values and y-values.
+    pub fn new_series(
+        xs: impl IntoIterator<Item = f64>,
+        ys: impl IntoIterator<Item = f64>,
     ) -> Self {
-        let xdata = xs;
-        let ydata = ys;
-
-        Self { xdata, ydata }
-    }
-}
-
-/// Holds borrowed step data to be plotted.
-#[derive(Copy, Clone)]
-pub(crate) struct StepData<Iedge, Idata>
-where
-    Iedge: Iterator<Item=f64> + Clone,
-    Idata: Iterator<Item=f64> + Clone,
-{
-    edges: Iedge,
-    ydata: Idata,
-}
-impl<Iedge, Idata> fmt::Debug for StepData<Iedge, Idata> 
-where
-    Iedge: Iterator<Item=f64> + Clone,
-    Idata: Iterator<Item=f64> + Clone,
-{
-    fn fmt(&self, _: &mut Formatter) -> Result<(), fmt::Error> {
-        Ok(())
-    }
-}
-impl<Iedge, Idata> SeriesData for StepData<Iedge, Idata>
-where
-    Iedge: Iterator<Item=f64> + Clone,
-    Idata: Iterator<Item=f64> + Clone,
-{
-    fn data<'b>(&'b self) -> Box<dyn Iterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.edges.clone().flat_map(|x| [x, x]).skip(1),
-            self.ydata.clone().flat_map(|y| [y, y]),
-        ))
-    }
-
-    fn xmin(&self) -> f64 {
-        self.edges.clone().fold(f64::INFINITY, |a, b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.edges.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        self.ydata.clone().fold(f64::INFINITY, |a, b| a.min(b))
-    }
-    fn ymax(&self) -> f64 {
-        self.ydata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
-    }
-}
-impl<Iedge, Idata> StepData<Iedge, Idata>
-where
-    Iedge: Iterator<Item=f64> + Clone,
-    Idata: Iterator<Item=f64> + Clone,
-{
-    /// Main constructor, taking separate array views of steps and y-values.
-    /// There should be one more step edge than y-values.
-    pub fn new(
-        edges: Iedge,
-        ydata: Idata,
-    ) -> Self {
-        Self { edges, ydata }
-    }
-}
-
-/// Holds borrowed data describing an area to be filled.
-#[derive(Copy, Clone)]
-pub(crate) struct FillBetweenData<Ix, Iy1, Iy2>
-where
-    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-{
-    xdata: Ix,
-    y1_data: Iy1,
-    y2_data: Iy2,
-}
-impl<Ix, Iy1, Iy2> fmt::Debug for FillBetweenData<Ix, Iy1, Iy2> 
-where
-    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-{
-    fn fmt(&self, _: &mut Formatter) -> Result<(), fmt::Error> {
-        Ok(())
-    }
-}
-impl<Ix, Iy1, Iy2> FillData for FillBetweenData<Ix, Iy1, Iy2>
-where
-    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-{
-    fn curve1<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.xdata.clone(),
-            self.y1_data.clone(),
-        ))
-    }
-
-    fn curve2<'b>(&'b self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'b> {
-        Box::new(iter::zip(
-            self.xdata.clone(),
-            self.y2_data.clone(),
-        ))
-    }
-
-    fn xmin(&self) -> f64 {
-        self.xdata.clone().fold(f64::INFINITY, |a, b| a.min(b))
-    }
-    fn xmax(&self) -> f64 {
-        self.xdata.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b))
-    }
-    fn ymin(&self) -> f64 {
-        f64::min(
-            self.y1_data.clone().fold(f64::INFINITY, |a, b| a.min(b)),
-            self.y2_data.clone().fold(f64::INFINITY, |a, b| a.min(b)),
-        )
-    }
-    fn ymax(&self) -> f64 {
-        f64::max(
-            self.y1_data.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b)),
-            self.y2_data.clone().fold(f64::NEG_INFINITY, |a, b| a.max(b)),
-        )
-    }
-}
-impl<Ix, Iy1, Iy2> FillBetweenData<Ix, Iy1, Iy2>
-where
-    Ix: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy1: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-    Iy2: Iterator<Item=f64> + iter::ExactSizeIterator + iter::DoubleEndedIterator + Clone,
-{
-    /// Main constructor, taking separate array views of x-values and y-values.
-    pub fn new(
-        xs: Ix,
-        y1s: Iy1,
-        y2s: Iy2,
-    ) -> Self {
-        Self {
-            xdata: xs,
-            y1_data: y1s,
-            y2_data: y2s,
+        Self::Series {
+            xdata: xs.into_iter().collect(),
+            ydata: ys.into_iter().collect(),
         }
     }
-}
 
-// traits
+    /// Main constructor for step data, taking step edges and y-values.
+    /// There should be one more step edge than y-values.
+    pub fn new_step(
+        edges: impl IntoIterator<Item = f64>,
+        ydata: impl IntoIterator<Item = f64>,
+    ) -> Self {
+        Self::Step {
+            edges: edges.into_iter().collect(),
+            ydata: ydata.into_iter().collect(),
+        }
+    }
 
-/// Implemented for data that can be represented by pairs of floats to be plotted.
-pub(crate) trait SeriesData: dyn_clone::DynClone + fmt::Debug {
     /// Returns data in an [`Iterator`] over x, y pairs.
-    fn data<'a>(&'a self) -> Box<dyn Iterator<Item = (f64, f64)> + 'a>;
+    pub fn data(&self) -> Box<dyn Iterator<Item = (f64, f64)> + '_> {
+        match self {
+            Self::Series { xdata, ydata } => Box::new(iter::zip(
+                xdata.iter().copied(),
+                ydata.iter().copied(),
+            )),
+            Self::Step { edges, ydata } => Box::new(iter::zip(
+                edges.iter().copied().flat_map(|x| [x, x]).skip(1),
+                ydata.iter().copied().flat_map(|y| [y, y]),
+            )),
+        }
+    }
+
     /// The smallest x-value.
-    fn xmin(&self) -> f64;
+    pub fn xmin(&self) -> f64 {
+        let xdata = match self {
+            Self::Series { xdata, .. } => xdata,
+            Self::Step { edges, .. } => edges,
+        };
+        xdata.iter().copied().fold(f64::INFINITY, f64::min)
+    }
     /// The largest x-value.
-    fn xmax(&self) -> f64;
+    pub fn xmax(&self) -> f64 {
+        let xdata = match self {
+            Self::Series { xdata, .. } => xdata,
+            Self::Step { edges, .. } => edges,
+        };
+        xdata.iter().copied().fold(f64::NEG_INFINITY, f64::max)
+    }
     /// The smallest y-value.
-    fn ymin(&self) -> f64;
+    pub fn ymin(&self) -> f64 {
+        let ydata = match self {
+            Self::Series { ydata, .. } => ydata,
+            Self::Step { ydata, .. } => ydata,
+        };
+        ydata.iter().copied().fold(f64::INFINITY, f64::min)
+    }
     /// The largest y-value.
-    fn ymax(&self) -> f64;
+    pub fn ymax(&self) -> f64 {
+        let ydata = match self {
+            Self::Series { ydata, .. } => ydata,
+            Self::Step { ydata, .. } => ydata,
+        };
+        ydata.iter().copied().fold(f64::NEG_INFINITY, f64::max)
+    }
 }
 
-dyn_clone::clone_trait_object!(SeriesData);
+/// Holds data describing an area to be filled.
+#[derive(Clone, Debug)]
+pub(crate) struct FillData {
+    xdata: Vec<f64>,
+    y1_data: Vec<f64>,
+    y2_data: Vec<f64>,
+}
+impl FillData {
+    /// Main constructor, taking separate x-values and the y-values of each curve.
+    pub fn new(
+        xs: impl IntoIterator<Item = f64>,
+        y1s: impl IntoIterator<Item = f64>,
+        y2s: impl IntoIterator<Item = f64>,
+    ) -> Self {
+        Self {
+            xdata: xs.into_iter().collect(),
+            y1_data: y1s.into_iter().collect(),
+            y2_data: y2s.into_iter().collect(),
+        }
+    }
 
-pub(crate) trait FillData: dyn_clone::DynClone + fmt::Debug {
     /// Returns data for the first curve in an [`Iterator`] over x, y pairs.
-    fn curve1<'a>(&'a self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'a>;
+    pub fn curve1(&self) -> impl DoubleEndedIterator<Item = (f64, f64)> + '_ {
+        iter::zip(self.xdata.iter().copied(), self.y1_data.iter().copied())
+    }
     /// Returns data for the second curve in an [`Iterator`] over x, y pairs.
-    fn curve2<'a>(&'a self) -> Box<dyn DoubleEndedIterator<Item = (f64, f64)> + 'a>;
-    /// The smallest x-value.
-    fn xmin(&self) -> f64;
-    /// The largest x-value.
-    fn xmax(&self) -> f64;
-    /// The smallest y-value.
-    fn ymin(&self) -> f64;
-    /// The largest y-value.
-    fn ymax(&self) -> f64;
-}
+    pub fn curve2(&self) -> impl DoubleEndedIterator<Item = (f64, f64)> + '_ {
+        iter::zip(self.xdata.iter().copied(), self.y2_data.iter().copied())
+    }
 
-dyn_clone::clone_trait_object!(FillData);
+    /// The smallest x-value.
+    pub fn xmin(&self) -> f64 {
+        self.xdata.iter().copied().fold(f64::INFINITY, f64::min)
+    }
+    /// The largest x-value.
+    pub fn xmax(&self) -> f64 {
+        self.xdata.iter().copied().fold(f64::NEG_INFINITY, f64::max)
+    }
+    /// The smallest y-value.
+    pub fn ymin(&self) -> f64 {
+        f64::min(
+            self.y1_data.iter().copied().fold(f64::INFINITY, f64::min),
+            self.y2_data.iter().copied().fold(f64::INFINITY, f64::min),
+        )
+    }
+    /// The largest y-value.
+    pub fn ymax(&self) -> f64 {
+        f64::max(
+            self.y1_data.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+            self.y2_data.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+        )
+    }
+}

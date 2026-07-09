@@ -13,8 +13,8 @@ use std::{f64, iter, marker, ops, path};
 /// Backend defaults to Cairo if cairo feature is enabled.
 #[derive(Debug)]
 #[cfg(feature = "cairo")]
-pub struct Figure<'a, B: backend::Canvas = backend::CairoCanvas> {
-    subplots: Vec<Subplot<'a>>,
+pub struct Figure<B: backend::Canvas = backend::CairoCanvas> {
+    subplots: Vec<Subplot>,
     subplot_areas: Vec<FractionalArea>,
     size: draw::Size,
     scaling: f32,
@@ -23,8 +23,8 @@ pub struct Figure<'a, B: backend::Canvas = backend::CairoCanvas> {
     phantom: marker::PhantomData<B>,
 }
 #[cfg(not(feature = "cairo"))]
-pub struct Figure<'a, B: backend::Canvas> {
-    subplots: Vec<Subplot<'a>>,
+pub struct Figure<B: backend::Canvas> {
+    subplots: Vec<Subplot>,
     subplot_areas: Vec<draw::Area>,
     size: draw::Size,
     scaling: f32,
@@ -32,7 +32,7 @@ pub struct Figure<'a, B: backend::Canvas> {
     face_color: Color,
     phantom: marker::PhantomData<B>,
 }
-impl<'a, B: backend::Canvas> Figure<'a, B> {
+impl<B: backend::Canvas> Figure<B> {
     /// The main constructor.
     pub fn new(format: &FigureFormat) -> Self {
         // scaling factor for different DPIs
@@ -54,7 +54,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
     }
 
     /// Adds subplots to the figure through a [`Layout`].
-    pub fn set_layout<'b, L: Layout<'a>>(&'b mut self, layout: L) -> Result<(), PltError> {
+    pub fn set_layout<L: Layout>(&mut self, layout: L) -> Result<(), PltError> {
         let (mut subplots, mut frac_areas): (Vec<Subplot>, Vec<FractionalArea>) = layout.subplots()
             .into_iter()
             .unzip();
@@ -119,10 +119,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
 
     /// Get reference to held subplots.
     #[deprecated]
-    pub fn subplots<'b>(&'b mut self) -> &mut Vec<Subplot<'a>>
-    where
-        'a: 'b,
-    {
+    pub fn subplots(&mut self) -> &mut Vec<Subplot> {
         &mut self.subplots
     }
 
@@ -140,7 +137,7 @@ impl<'a, B: backend::Canvas> Figure<'a, B> {
         self.subplot_areas.clear();
     }
 }
-impl<'a, B: backend::Canvas> Default for Figure<'a, B> {
+impl<B: backend::Canvas> Default for Figure<B> {
     fn default() -> Self {
         Self::new(&FigureFormat::default())
     }
@@ -176,11 +173,11 @@ pub struct FigSize {
 // private
 
 struct SubplotList<'a> {
-    subplots: &'a mut Vec<Subplot<'a>>,
+    subplots: &'a mut Vec<Subplot>,
     rows: usize,
 }
 impl<'a> ops::Index<(usize, usize)> for SubplotList<'a> {
-    type Output = Subplot<'a>;
+    type Output = Subplot;
 
     fn index(&self, indicies: (usize, usize)) -> &Self::Output {
         &self.subplots[indicies.0 + self.rows * indicies.1]
