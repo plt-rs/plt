@@ -136,42 +136,30 @@ impl Default for Font {
 
 /// The name of a text font.
 #[non_exhaustive]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum FontName {
+    #[default]
     FreeSans,
     Arial,
     Georgia,
     Custom(String),
 }
-impl Default for FontName {
-    fn default() -> Self {
-        Self::FreeSans
-    }
-}
 
 /// The slant of a font.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub enum FontSlant {
+    #[default]
     Normal,
     Italic,
     Oblique,
 }
-impl Default for FontSlant {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
 
 /// The weight of a font.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub enum FontWeight {
+    #[default]
     Normal,
     Bold,
-}
-impl Default for FontWeight {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 /// How something should be aligned.

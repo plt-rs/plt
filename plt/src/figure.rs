@@ -6,7 +6,7 @@ use crate::subplot::{
 use crate::{Color, FileFormat, PltError};
 
 use std::collections::HashMap;
-use std::{f64, iter, marker, ops, path};
+use std::{f64, iter, marker, path};
 
 /// Represents a whole figure, containing subplots, which can be drawn as an image.
 ///
@@ -171,23 +171,6 @@ pub struct FigSize {
 }
 
 // private
-
-struct SubplotList<'a> {
-    subplots: &'a mut Vec<Subplot>,
-    rows: usize,
-}
-impl<'a> ops::Index<(usize, usize)> for SubplotList<'a> {
-    type Output = Subplot;
-
-    fn index(&self, indicies: (usize, usize)) -> &Self::Output {
-        &self.subplots[indicies.0 + self.rows * indicies.1]
-    }
-}
-impl ops::IndexMut<(usize, usize)> for SubplotList<'_> {
-    fn index_mut(&mut self, indicies: (usize, usize)) -> &mut Self::Output {
-        &mut self.subplots[indicies.0 + self.rows * indicies.1]
-    }
-}
 
 struct AxisFinalized {
     pub label: String,

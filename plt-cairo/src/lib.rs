@@ -186,7 +186,7 @@ impl draw::Canvas for CairoCanvas {
 
         self.context.set_dash(desc.dashes, 0.0);
 
-        let offset = if desc.line_width % 2 == 0 { 0.0 } else { 0.5 };
+        let offset = if desc.line_width.is_multiple_of(2) { 0.0 } else { 0.5 };
 
         self.context.line_to(p1.x + offset, p1.y - offset);
         self.context.line_to(p2.x + offset, p2.y - offset);
@@ -218,7 +218,7 @@ impl draw::Canvas for CairoCanvas {
 
         self.context.set_dash(desc.dashes, 0.0);
 
-        let offset = if desc.line_width % 2 == 0 { 0.0 } else { 0.5 };
+        let offset = if desc.line_width.is_multiple_of(2) { 0.0 } else { 0.5 };
 
         for point in desc.points {
             let point = CairoPoint::from_point(point, self.size);
