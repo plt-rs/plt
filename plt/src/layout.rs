@@ -1,5 +1,7 @@
-use crate::subplot::{Subplot, SubplotDescriptor};
+use crate::subplot::Subplot;
 use crate::PltError;
+
+use std::collections::HashMap;
 
 #[cfg(doc)]
 use crate::figure::Figure;
@@ -30,74 +32,43 @@ impl Layout for SingleLayout {
 
 /// A [`Layout`] in which subplots are placed in a grid orientation in the figure.
 pub struct GridLayout {
-    subplots: ndarray::Array2<Subplot>,
-    areas: ndarray::Array2<FractionalArea>,
-    mask: ndarray::Array2<bool>,
+    row_heights: Vec<f64>,
+    col_widths: Vec<f64>,
+    subplots: HashMap<(usize, usize), Subplot>,
 }
 impl GridLayout {
     /// Creates an empty layout.
     pub fn new(nrows: usize, ncols: usize) -> Self {
-        let xextent = 1.0 / ncols as f64;
-        let yextent = 1.0 / nrows as f64;
-        let areas = (0..(nrows * ncols))
-            .map(|index| {
-                // get row and column indices
-                let row = index / ncols;
-                let col = index % ncols;
-
-                let xmin = xextent * col as f64;
-                let xmax = xmin + xextent;
-                let ymin = yextent * (nrows - 1 - row) as f64;
-                let ymax = ymin + yextent;
-
-                FractionalArea { xmin, xmax, ymin, ymax }
-            })
-            .collect::<ndarray::Array1<_>>();
-        let areas = areas.into_shape((nrows, ncols)).unwrap();
-
         Self {
-            subplots: ndarray::Array2::from_elem(
-                (nrows, ncols),
-                Subplot::new(&SubplotDescriptor::default()),
-            ),
-            areas,
-            mask: ndarray::Array2::from_elem((nrows, ncols), false),
+            row_heights: vec![1.0 / nrows as f64; nrows],
+            col_widths: vec![1.0 / ncols as f64; ncols],
+            subplots: HashMap::new(),
         }
     }
     /// Creates a uniform grid layout from a 2D array, filling only the spots with [`Some`] subplot.
-    pub fn from_array<A: Into<ndarray::Array2<Option<Subplot>>>>(subplots: A) -> Self {
-        let subplots = subplots.into();
+    pub fn from_array<const N: usize, I>(subplots: I) -> Self 
+    where
+        I: IntoIterator<Item=[Option<Subplot>;N]>,
+        <I as IntoIterator>::IntoIter: std::iter::ExactSizeIterator
+    {
+        let subplots = subplots.into_iter();
+        let nrows = subplots.len();
+        let ncols = N;
 
-        let nrows = subplots.nrows();
-        let ncols = subplots.ncols();
-
-        let xextent = 1.0 / ncols as f64;
-        let yextent = 1.0 / nrows as f64;
-        let areas = (0..(nrows * ncols))
-            .map(|index| {
-                // get row and column indices
+        let hash_iter = subplots.flatten()
+            .enumerate()
+            .filter_map(|(index, subplot)| {
                 let row = index / ncols;
                 let col = index % ncols;
+                let subplot = subplot?;
 
-                let xmin = xextent * col as f64;
-                let xmax = xmin + xextent;
-                let ymin = yextent * (nrows - 1 - row) as f64;
-                let ymax = ymin + yextent;
-
-                FractionalArea { xmin, xmax, ymin, ymax }
-            })
-            .collect::<ndarray::Array1<_>>();
-        let areas = areas.into_shape((nrows, ncols)).unwrap();
-
-        let mask = subplots.map(|subplot| subplot.is_some());
-        let subplots = subplots.mapv(|subplot| {
-            subplot.unwrap_or_else(|| Subplot::new(&SubplotDescriptor::default()))
-        });
+                Some(((row, col), subplot))
+            });
 
         Self {
-            subplots,
-            areas,
-            mask,
+            subplots: HashMap::from_iter(hash_iter),
+            row_heights: vec![1.0 / nrows as f64; nrows],
+            col_widths: vec![1.0 / ncols as f64; ncols],
         }
     }
     /// Adds or replaces a subplot at the specified location.
@@ -106,29 +77,49 @@ impl GridLayout {
         (row, col): (usize, usize),
         subplot: Subplot,
     ) -> Result<(), PltError> {
-        if (row + 1) > self.subplots.nrows() {
-            return Err(PltError::InvalidRow { row, nrows: self.subplots.nrows() });
+        let nrows = self.row_heights.len();
+        let ncols = self.col_widths.len();
+        if (row + 1) > nrows {
+            return Err(PltError::InvalidRow { row, nrows });
         }
-        if (col + 1) > self.subplots.ncols() {
-            return Err(PltError::InvalidColumn { col, ncols: self.subplots.ncols() });
+        if (col + 1) > ncols {
+            return Err(PltError::InvalidColumn { col, ncols });
         }
 
-        self.subplots[[row, col]] = subplot;
-        self.mask[[row, col]] = true;
+        self.subplots.insert((row, col), subplot);
 
         Ok(())
     }
 }
+impl GridLayout {
+    fn subplot_area(&self, (row, col): (usize, usize)) -> Option<FractionalArea> {
+        let nrows = self.row_heights.len();
+        let ncols = self.col_widths.len();
+        if (row + 1) > nrows || (col + 1) > ncols {
+            return None
+        }
+
+        let xmin = self.col_widths.iter().take(col).sum();
+        let xmax = xmin + self.col_widths[col];
+
+        let ymax = 1.0 - self.row_heights.iter().take(row).sum::<f64>();
+        let ymin = ymax - self.row_heights.get(row)?;
+
+        Some(FractionalArea { xmin, xmax, ymin, ymax })
+    }
+}
 impl Layout for GridLayout {
     fn subplots(self) -> Vec<(Subplot, FractionalArea)> {
-        Iterator::zip(
-            self.subplots.indexed_iter().filter_map(|(index, subplot)|
-                if self.mask[index] { Some(subplot) } else { None }
-            ).cloned(),
-            self.areas.indexed_iter().filter_map(|(index, area)|
-                if self.mask[index] { Some(area) } else { None }
-            ).cloned(),
-        ).collect()
+        let areas: Vec<_> = self.subplots.keys()
+            .map(|&(row, col)| {
+                self.subplot_area((row, col))
+                    .expect("all subplot entries should have valid row/col numbers")
+            })
+            .collect();
+
+        self.subplots.into_values()
+            .zip(areas)
+            .collect()
     }
 }
 
