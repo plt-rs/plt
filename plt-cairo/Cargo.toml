@@ -16,8 +16,8 @@ svg = ["cairo-rs/svg"]
 
 [dependencies]
 anyhow = "1"
-cairo-rs = { version = "0.16" }
-png = { version = "0.17", optional = true }
+cairo-rs = { version = "0.22" }
+png = { version = "0.18", optional = true }
 
 [dependencies.draw]
 package = "plt-draw"

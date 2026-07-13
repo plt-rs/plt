@@ -6,10 +6,10 @@ fn main() {
     // create data
     let norm = Normal::new(0.0, 0.15).unwrap();
     let xs: Vec<f64> = (0..3_000)
-        .map(|_| 10.0 * norm.sample(&mut rand::thread_rng()))
+        .map(|_| 10.0 * norm.sample(&mut rand::rng()))
         .collect();
     let ys: Vec<f64> = (0..3_000)
-        .map(|_| 10.0 * norm.sample(&mut rand::thread_rng()))
+        .map(|_| 10.0 * norm.sample(&mut rand::rng()))
         .collect();
 
     // histogram data

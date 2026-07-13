@@ -6,13 +6,13 @@ fn main() {
     // create randomized scatter data
     let dist = Normal::new(0.0, 0.1).unwrap();
     let xs = (0..500)
-        .map(|_| dist.sample(&mut rand::thread_rng()))
+        .map(|_| dist.sample(&mut rand::rng()))
         .collect::<ndarray::Array1<_>>();
     let line_ys = xs.iter()
         .map(|x: &f64| 4.2 * x + 12.5)
         .collect::<ndarray::Array1<_>>();
     let scatter_ys = line_ys.iter()
-        .map(|y: &f64| *y * (1.0 + dist.sample(&mut rand::thread_rng())))
+        .map(|y: &f64| *y * (1.0 + dist.sample(&mut rand::rng())))
         .collect::<ndarray::Array1<_>>();
 
     // create subplot

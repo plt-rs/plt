@@ -14,7 +14,7 @@ fn main() {
     // create randomized scatter data
     let dist = Normal::new(0.0, 0.1).unwrap();
     let scatter_ys = line_ys.iter()
-        .map(|y: &f64| *y + *y * dist.sample(&mut rand::thread_rng()))
+        .map(|y: &f64| *y + *y * dist.sample(&mut rand::rng()))
         .collect::<Vec<_>>();
 
     // create new subplot

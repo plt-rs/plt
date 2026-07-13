@@ -11,4 +11,4 @@ categories = ["visualization", "graphics"]
 
 [dependencies]
 anyhow = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
