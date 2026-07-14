@@ -6,13 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Major Changes
+
+- All plotting functions now take ownership of data.
+- Removed `plot_owned`, `step_owned`, and `fill_between_owned` methods.
+- Plotting functions now take an `IntoIterator` instead of `ArrayView1`.
+- Plotting functions now accept any datatype that losslessly converts to `f64`.
+
 ### Changed
 
+- `Subplot`, `SubplotBuilder`, `Figure`, `Layout`, `SingleLayout`, and `GridLayout` types no longer carry explicit lifetimes.
 - Each dataset passed to a plotting function has its own lifetime.
+- Removed `ndarray` from public API.
 
 ### Added
 
+- `xlabel`, `ylabel`, `xlimits`, `ylimits`, and `standard_grid` shortcut methods for `SubplotBuilder`.
+- `IntoF64` trait for accepting types and references to types that losslessly convert to `f64`.
 - New font options, including custom font names.
+
+### Removed
+
+- Removed deprecated `subplots` method for `Figure`
 
 ### Fixed
 
