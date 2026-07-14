@@ -25,8 +25,8 @@ let ys: Vec<f64> = xs.iter().map(|x| x.powi(3)).collect();
 
 // create subplot
 let mut sp = Subplot::builder()
-    .label(Axes::X, "x data")
-    .label(Axes::Y, "y data")
+    .xlabel("X")
+    .ylabel("Y")
     .build();
 
 // plot data
