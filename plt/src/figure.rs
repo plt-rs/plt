@@ -117,12 +117,6 @@ impl<B: backend::Canvas> Figure<B> {
         Ok(())
     }
 
-    /// Get reference to held subplots.
-    #[deprecated]
-    pub fn subplots(&mut self) -> &mut Vec<Subplot> {
-        &mut self.subplots
-    }
-
     /// Change size of figure.
     pub fn set_size(&mut self, size: FigSize) {
         let width = (size.width * self.dpi as f32).floor() as u32;
