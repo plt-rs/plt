@@ -27,5 +27,5 @@ fn main() {
     fig.set_layout(SingleLayout::new(subplot)).unwrap();
 
     // save figure to file
-    fig.draw_file(FileFormat::Png, "example.png").unwrap();
+    fig.draw_file(FileFormat::Svg, "example.svg").unwrap();
 }

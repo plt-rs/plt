@@ -37,10 +37,10 @@ let mut fig = <Figure>::default();
 fig.set_layout(SingleLayout::new(sp)).unwrap();
 
 // save figure to file
-fig.draw_file(FileFormat::Png, "example.png").unwrap();
+fig.draw_file(FileFormat::Png, "example.svg").unwrap();
 ```
 
-![Simple Example](https://github.com/plt-rs/plt/blob/main/plt/examples/assets/simple.png?raw=true)
+![Simple Example](https://github.com/plt-rs/plt/blob/main/plt/examples/assets/simple.svg?raw=true)
 
 ## Dependencies
 

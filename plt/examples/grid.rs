@@ -102,7 +102,7 @@ fn main() {
     fig.set_layout(layout).unwrap();
 
     // save figure to file
-    fig.draw_file(FileFormat::Png, "example.png").unwrap();
+    fig.draw_file(FileFormat::Svg, "example.svg").unwrap();
 }
 
 // returns a new histogram with bins defined by `bin_edges` and filled from `data`.
