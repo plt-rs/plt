@@ -25,8 +25,8 @@ fn main() {
         })
         .xlabel("X [arbitrary units]")
         .ylabel("Y [arbitrary units]")
-        .xlimits(Limits::Manual { min: 0.0, max: 10.0 })
-        .ylimits(Limits::Manual { min: 0.0, max: 1e3 })
+        .limits(Axes::X, Limits::Manual { min: 0.0, max: 10.0 })
+        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 1e3 })
         .standard_grid()
         .build();
 

@@ -13,8 +13,8 @@ fn main() {
         })
         .xlabel("X [arbitrary units]")
         .ylabel("Y [arbitrary units]")
-        .xlimits(Limits::Manual { min: 0.0, max: 50.0 })
-        .ylimits(Limits::Manual { min: 0.0, max: 5.0 })
+        .limits(Axes::X, Limits::Manual { min: 0.0, max: 50.0 })
+        .limits(Axes::Y, Limits::Manual { min: 0.0, max: 5.0 })
         .major_tick_marks(Axes::BothX, TickSpacing::Count(6))
         .standard_grid()
         .build();
