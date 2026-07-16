@@ -279,7 +279,7 @@ fn tick_modifiers(ticks: &[f64]) -> Result<(f64, i32, usize), PltError> {
     // find the largest difference between any two consecutive ticks
     let max_dif = *difs.iter()
         .reduce(|max, dif| if dif > max { dif } else { max })
-        .unwrap();
+        .unwrap_or(&0.0);
     // find the highest most significant digit of the max tick difference
     let dif_multiplier = if max_dif != 0.0 {
         sigdigit(max_dif)
@@ -564,7 +564,15 @@ fn draw_subplot<B: backend::Canvas>(
             };
 
             if !major_ticks.is_empty() {
-                let major_tick_delta = (span.1 - span.0) / (major_ticks.len() - 1) as f64;
+                let major_tick_delta = if major_ticks.len() >= 2 {
+                    let min_tick = major_ticks.iter()
+                        .fold(f64::INFINITY, |a, &b| f64::min(a, b));
+                    let max_tick = major_ticks.iter()
+                        .fold(f64::NEG_INFINITY, |a, &b| f64::max(a, b));
+                    (max_tick - min_tick) / (major_ticks.len() - 1) as f64
+                } else {
+                    major_ticks[0] - limits.0
+                };
                 let minor_tick_delta = major_tick_delta / (nticks_per_major + 1) as f64;
 
                 let nticks_before_first = ((span.0 - limits.0) / minor_tick_delta).floor();
