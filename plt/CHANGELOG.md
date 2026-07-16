@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Subplot`, `SubplotBuilder`, `Figure`, `Layout`, `SingleLayout`, and `GridLayout` types no longer carry explicit lifetimes.
 - Each dataset passed to a plotting function has its own lifetime.
 - Removed `ndarray` from public API.
+- limits setting methods now accept any `Into<Limits>` including tuples and inclusive ranges.
 
 ### Added
 

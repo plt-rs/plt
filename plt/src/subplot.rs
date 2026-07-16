@@ -1,6 +1,6 @@
 use crate::{Color, FontName, PltError};
 
-use std::{array, f64, iter};
+use std::{array, f64, iter, ops};
 
 /// The object that represents a whole subplot and is used to draw plotted data.
 #[derive(Clone, Debug)]
@@ -323,7 +323,8 @@ impl SubplotBuilder {
     }
 
     /// Sets axis limits.
-    pub fn limits(mut self, axes: Axes, limits: Limits) -> Self {
+    pub fn limits(mut self, axes: Axes, limits: impl Into<Limits>) -> Self {
+        let limits = limits.into();
         let axes = self.axes(axes);
         for axis in axes {
             if let Limits::Manual { min, max } = limits {
@@ -337,12 +338,12 @@ impl SubplotBuilder {
     }
     /// Sets the x-axis limits.
     /// Shortcut for calling `.limits(Axes::X, limits)`.
-    pub fn xlimits(self, limits: Limits) -> Self {
+    pub fn xlimits(self, limits: impl Into<Limits>) -> Self {
         self.limits(Axes::X, limits)
     }
     /// Sets the y-axis limits.
     /// Shortcut for calling `.limits(Axes::Y, limits)`.
-    pub fn ylimits(self, limits: Limits) -> Self {
+    pub fn ylimits(self, limits: impl Into<Limits>) -> Self {
         self.limits(Axes::Y, limits)
     }
 
@@ -603,6 +604,16 @@ pub enum Limits {
     Auto,
     /// Limits are set manually.
     Manual { min: f64, max: f64 },
+}
+impl<S: IntoF64, E: IntoF64> From<(S, E)> for Limits {
+    fn from(limits: (S, E)) -> Self {
+        Self::Manual { min: limits.0.f64(), max: limits.1.f64() }
+    }
+}
+impl<F: IntoF64> From<ops::RangeInclusive<F>> for Limits {
+    fn from(limits: ops::RangeInclusive<F>) -> Self {
+        Self::from(limits.into_inner())
+    }
 }
 
 /// Plots data on a subplot using the builder pattern.
